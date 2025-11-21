@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Check the 'role' field in the user's document
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Allow anyone to create their own account doc (registration)
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Allow public read access for statistics (count queries)
+      // This enables landing page to show total user count
+      allow read: if true;
+      // Users can update specific fields (e.g. profile photo), but not role or totalActiveSeconds directly if those are system managed
+      allow update: if isOwner(userId) && 
+                    (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'totalActiveSeconds', 'lastSeen']));
+      // Admins have full access
+      allow write: if isAdmin();
+    }
+
+    // User Timers
+    match /userTimers/{userId} {
+      // Users can read their own timer
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can create their own timer (during registration)
+      allow create: if isOwner(userId);
+      
+      // Users can update ONLY remainingTime and lastSyncedAt (for countdown sync)
+      // They CANNOT modify history (only admins can add to history)
+      allow update: if isOwner(userId) && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['remainingTime', 'lastSyncedAt']);
+      
+      // Admins have full write access (can modify history, add time, etc)
+      allow write: if isAdmin();
+    }
+
+    // Test Stages
+    match /testStages/{stageId} {
+      // Publicly readable (for landing page stats and browsing)
+      allow read: if true;
+      // Only admins can modify content
+      allow write: if isAdmin();
+
+      // Questions subcollection
+      match /questions/{questionId} {
+        // Publicly readable (for landing page stats)
+        allow read: if true;
+        allow write: if isAdmin();
+
+        // Options subcollection
+        match /options/{optionId} {
+          // Only authenticated users can read options (to prevent cheating)
+          allow read: if isAuthenticated();
+          allow write: if isAdmin();
+        }
+      }
+    }
+
+    // User Progress
+    match /userProgress/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      // Users can write their own progress (e.g. tracking video watch time)
+      // But critical completion logic might be better suited for Cloud Functions to prevent cheating.
+      // Prompt says "userProgress/{userId} writable by the owning user for progress updates"
+      allow write: if isOwner(userId);
+    }
+
+    // Sessions (Activity Tracking)
+    match /sessions/{sessionId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid || isAdmin();
+    }
+
+    // Admin Actions
+    match /adminActions/{actionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Certificates
+    match /certificates/{certificateId} {
+      // Allow authenticated users to list/query certificates (they'll only see their own via client-side filtering)
+      allow list: if isAuthenticated();
+      // Users can read their own certificate document
+      allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can create their own certificate (for auto-issuance)
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Admins have full access
+      allow read, write: if isAdmin();
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+      // Users can create their own notifications (for auto-issuance)
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can read and update (mark as read) their own notifications
+      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
