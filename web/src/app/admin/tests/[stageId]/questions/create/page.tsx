@@ -52,7 +52,7 @@ export default function CreateQuestionPage() {
                 opt.isCorrect = i === index;
             });
         } else {
-            newOptions[index][field] = value as any;
+            (newOptions[index] as any)[field] = value;
         }
         setOptions(newOptions);
     };
