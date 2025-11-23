@@ -97,3 +97,58 @@ export interface AdminAction {
     payload: any;
     createdAt: Timestamp;
 }
+
+// Quick Test Interfaces
+export interface QuickTest {
+    testId: string;
+    title: string;
+    description: string;
+    createdBy: string; // admin userId
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    isActive: boolean;
+    totalLevels: number;
+    timeLimit?: number; // seconds per level (optional)
+    certificateThreshold?: number; // percentage required for certificate
+}
+
+export interface QuickTestLevel {
+    levelId: string;
+    testId: string;
+    levelNumber: number;
+    title: string;
+    questions: QuickTestQuestion[];
+    timeLimit?: number; // seconds for this level
+}
+
+export interface QuickTestQuestion {
+    questionId: string;
+    questionText: string;
+    imageUrl?: string; // Google Drive image URL
+    options: QuickTestOption[];
+    explanation?: string;
+}
+
+export interface QuickTestOption {
+    optionId: string;
+    text: string;
+    isCorrect: boolean;
+}
+
+export interface QuickTestResult {
+    resultId: string;
+    testId: string;
+    userId: string;
+    userName: string;
+    levelId: string;
+    levelNumber: number;
+    score: number; // correct answers count
+    totalQuestions: number;
+    timeSpentSeconds: number;
+    answers: Array<{
+        questionId: string;
+        selectedOptionId: string;
+        isCorrect: boolean;
+    }>;
+    completedAt: Timestamp;
+}

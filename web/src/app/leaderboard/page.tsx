@@ -6,7 +6,7 @@ import { signOut } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
-import { Trophy, Star, Medal, TrendingUp, Award } from 'lucide-react';
+import { Trophy, Star, Medal, TrendingUp, Award, Search } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import ActivityTracker from '@/components/layout/ActivityTracker';
 
@@ -27,6 +27,7 @@ export default function LeaderboardPage() {
     const [rankings, setRankings] = useState<UserRanking[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalStages, setTotalStages] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (!isLoadingAuth && !user) {
@@ -215,6 +216,20 @@ export default function LeaderboardPage() {
                         </div>
                     )}
 
+                    {/* Search Bar */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Ism yoki email bo'yicha qidirish..."
+                                className="w-full pl-12 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                            />
+                        </div>
+                    </div>
+
                     {/* Full Rankings Table */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
@@ -229,57 +244,62 @@ export default function LeaderboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
-                                    {rankings.map((rankUser) => (
-                                        <tr key={rankUser.userId} className={`hover:bg-slate-800/30 transition-colors ${rankUser.userId === user.userId ? 'bg-cyan-500/10' : ''}`}>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {getRankBadge(rankUser.rank)}
-                                                    <span className={`text-lg font-bold ${rankUser.rank <= 3 ? 'text-white' : 'text-slate-400'}`}>
-                                                        #{rankUser.rank}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 bg-gradient-to-br ${getRankColor(rankUser.rank)} rounded-full flex items-center justify-center text-white font-semibold`}>
-                                                        {rankUser.name.charAt(0).toUpperCase()}
+                                    {rankings
+                                        .filter(rankUser =>
+                                            rankUser.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                            rankUser.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                        )
+                                        .map((rankUser) => (
+                                            <tr key={rankUser.userId} className={`hover:bg-slate-800/30 transition-colors ${rankUser.userId === user.userId ? 'bg-cyan-500/10' : ''}`}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        {getRankBadge(rankUser.rank)}
+                                                        <span className={`text-lg font-bold ${rankUser.rank <= 3 ? 'text-white' : 'text-slate-400'}`}>
+                                                            #{rankUser.rank}
+                                                        </span>
                                                     </div>
-                                                    <div>
-                                                        <div className="font-medium text-white flex items-center gap-2">
-                                                            {rankUser.name}
-                                                            {rankUser.userId === user.userId && (
-                                                                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full">Siz</span>
-                                                            )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 bg-gradient-to-br ${getRankColor(rankUser.rank)} rounded-full flex items-center justify-center text-white font-semibold`}>
+                                                            {rankUser.name.charAt(0).toUpperCase()}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">{rankUser.email}</div>
+                                                        <div>
+                                                            <div className="font-medium text-white flex items-center gap-2">
+                                                                {rankUser.name}
+                                                                {rankUser.userId === user.userId && (
+                                                                    <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full">Siz</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500">{rankUser.email}</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Star className="text-yellow-400" size={18} fill="currentColor" />
-                                                    <span className="text-xl font-bold text-yellow-400">{rankUser.totalStars}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-center">
-                                                    <span className="text-white font-semibold">{rankUser.completedStages}</span>
-                                                    <span className="text-slate-500"> / {rankUser.totalStages}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <div className={`px-3 py-1 rounded-full font-semibold ${rankUser.averageScore >= 90 ? 'bg-green-500/20 text-green-400' :
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Star className="text-yellow-400" size={18} fill="currentColor" />
+                                                        <span className="text-xl font-bold text-yellow-400">{rankUser.totalStars}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-center">
+                                                        <span className="text-white font-semibold">{rankUser.completedStages}</span>
+                                                        <span className="text-slate-500"> / {rankUser.totalStages}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <div className={`px-3 py-1 rounded-full font-semibold ${rankUser.averageScore >= 90 ? 'bg-green-500/20 text-green-400' :
                                                             rankUser.averageScore >= 75 ? 'bg-blue-500/20 text-blue-400' :
                                                                 rankUser.averageScore >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
                                                                     'bg-red-500/20 text-red-400'
-                                                        }`}>
-                                                        {rankUser.averageScore}%
+                                                            }`}>
+                                                            {rankUser.averageScore}%
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>

@@ -419,6 +419,53 @@ export default function DashboardPage() {
                         </div>
                     )}
 
+                    {/* Quick Tests Section */}
+                    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Link
+                            href="/quick-tests"
+                            className="group bg-gradient-to-br from-cyan-900/50 to-blue-900/50 border-2 border-cyan-500/30 rounded-2xl p-6 hover:border-cyan-500/50 transition-all hover:shadow-lg hover:shadow-cyan-500/20"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Trophy size={32} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-1">Tezkor Imtihonlar</h3>
+                                    <p className="text-cyan-200 text-sm">Bilimingizni sinab ko'ring</p>
+                                </div>
+                            </div>
+                            <p className="text-slate-300 text-sm mb-4">
+                                Bosqichma-bosqich imtihonlar orqali o'z bilimingizni tekshiring va reytingda yuqori o'rinlarni egallang
+                            </p>
+                            <div className="flex items-center gap-2 text-cyan-400 font-medium">
+                                <span>Imtihonlarga o'tish</span>
+                                <PlayCircle size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </Link>
+
+                        <Link
+                            href="/quick-tests/leaderboard"
+                            className="group bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border-2 border-yellow-500/30 rounded-2xl p-6 hover:border-yellow-500/50 transition-all hover:shadow-lg hover:shadow-yellow-500/20"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Trophy size={32} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-1">Reyting Jadvali</h3>
+                                    <p className="text-yellow-200 text-sm">Eng yaxshi natijalar</p>
+                                </div>
+                            </div>
+                            <p className="text-slate-300 text-sm mb-4">
+                                Tezkor imtihonlarda eng yuqori natijalarni ko'rsatgan foydalanuvchilar va o'z o'rningizni aniqlang
+                            </p>
+                            <div className="flex items-center gap-2 text-yellow-400 font-medium">
+                                <span>Reytingni ko'rish</span>
+                                <TrendingUp size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </Link>
+                    </div>
+
                     <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Test Bosqichlari</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

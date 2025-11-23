@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LayoutDashboard, Users, FileText, BarChart3, Trophy, LogOut, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, Users, FileText, BarChart3, Trophy, LogOut, Award, Zap } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +10,7 @@ const navItems = [
     { name: 'Overview', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Tests', href: '/admin/tests', icon: FileText },
+    { name: 'Quick Tests', href: '/admin/quick-tests', icon: Zap },
     { name: 'Certificates', href: '/admin/certificates', icon: Award },
     { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },

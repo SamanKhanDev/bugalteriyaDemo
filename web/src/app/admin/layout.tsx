@@ -5,6 +5,8 @@ import { useStore } from '@/store/useStore';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 
+import AdminBackground from '@/components/admin/AdminBackground';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoadingAuth } = useStore();
     const router = useRouter();
@@ -49,7 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className={`min-h-screen bg-slate-950 text-slate-100 transition-all duration-300 ${isSidebarCollapsed ? 'pl-20' : 'pl-64'}`}>
+        <div className={`min-h-screen text-slate-100 transition-all duration-300 ${isSidebarCollapsed ? 'pl-20' : 'pl-64'}`}>
+            <AdminBackground />
             <AdminSidebar
                 isCollapsed={isSidebarCollapsed}
                 toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
