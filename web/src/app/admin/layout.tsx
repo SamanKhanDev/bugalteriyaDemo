@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isLoadingAuth || !authorized) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
-                Checking permissions...
+                Ruxsatlar tekshirilmoqda...
             </div>
         );
     }

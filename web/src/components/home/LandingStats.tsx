@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getCountFromServer, collectionGroup, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { PlayCircle, CheckCircle, Users, Award } from 'lucide-react';
 
@@ -10,36 +10,60 @@ export default function LandingStats() {
         videos: 0,
         questions: 0,
         users: 0,
+        certificates: 0,
         loading: true
     });
 
     useEffect(() => {
+        let unsubscribeUsers: (() => void) | undefined;
+        let unsubscribeCerts: (() => void) | undefined;
+
         const fetchStats = async () => {
             try {
-                // 1. Count Users
-                const usersColl = collection(db, 'users');
-                const usersSnapshot = await getCountFromServer(usersColl);
-                const usersCount = usersSnapshot.data().count;
-
-                // 2. Count Video Lessons (Stages with videoUrl)
-                // Note: We can't easily filter by field existence with getCountFromServer without an index sometimes,
-                // but let's try simple count of all stages first as most have videos.
-                // Or better, just count all stages.
-                const stagesColl = collection(db, 'testStages');
-                const stagesSnapshot = await getCountFromServer(stagesColl);
-                const stagesCount = stagesSnapshot.data().count;
-
-                // 3. Count Questions (using collectionGroup)
-                const questionsQuery = query(collectionGroup(db, 'questions'));
-                const questionsSnapshot = await getCountFromServer(questionsQuery);
-                const questionsCount = questionsSnapshot.data().count;
-
-                setStats({
-                    videos: stagesCount,
-                    questions: questionsCount,
-                    users: usersCount,
-                    loading: false
+                // Real-time listener for users
+                unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+                    setStats(prev => ({
+                        ...prev,
+                        users: snapshot.size
+                    }));
                 });
+
+                // Real-time listener for certificates
+                unsubscribeCerts = onSnapshot(collection(db, 'certificates'), (snapshot) => {
+                    setStats(prev => ({
+                        ...prev,
+                        certificates: snapshot.size
+                    }));
+                });
+
+                // Count videos (stages with videoUrl)
+                const stagesSnapshot = await getDocs(collection(db, 'testStages'));
+                const videoCount = stagesSnapshot.docs.filter(doc => doc.data().videoUrl).length;
+
+                // Count all questions from test stages
+                let questionCount = 0;
+                for (const stageDoc of stagesSnapshot.docs) {
+                    const questionsSnapshot = await getDocs(
+                        collection(db, 'testStages', stageDoc.id, 'questions')
+                    );
+                    questionCount += questionsSnapshot.size;
+                }
+
+                // Also count quick test questions
+                const quickTestsSnapshot = await getDocs(collection(db, 'quickTests'));
+                for (const quickTestDoc of quickTestsSnapshot.docs) {
+                    const questionsSnapshot = await getDocs(
+                        collection(db, 'quickTests', quickTestDoc.id, 'questions')
+                    );
+                    questionCount += questionsSnapshot.size;
+                }
+
+                setStats(prev => ({
+                    ...prev,
+                    videos: videoCount,
+                    questions: questionCount,
+                    loading: false
+                }));
             } catch (error) {
                 console.error('Error fetching stats:', error);
                 // Fallback to some default numbers if error
@@ -47,12 +71,19 @@ export default function LandingStats() {
                     videos: 50,
                     questions: 1000,
                     users: 500,
+                    certificates: 100,
                     loading: false
                 });
             }
         };
 
         fetchStats();
+
+        // Cleanup listeners on unmount
+        return () => {
+            if (unsubscribeUsers) unsubscribeUsers();
+            if (unsubscribeCerts) unsubscribeCerts();
+        };
     }, []);
 
     if (stats.loading) {
@@ -70,29 +101,29 @@ export default function LandingStats() {
 
     return (
         <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 border-t border-slate-800/50 pt-10 w-full">
-            <div className="flex flex-col items-center">
-                <div className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
-                    <PlayCircle className="text-cyan-400" size={24} /> {stats.videos}+
+            <div className="flex flex-col items-center group">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
+                    <PlayCircle className="text-cyan-400" size={28} /> {stats.videos}+
                 </div>
                 <div className="text-sm text-slate-500">Video Darslar</div>
             </div>
-            <div className="flex flex-col items-center">
-                <div className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
-                    <CheckCircle className="text-green-400" size={24} /> {stats.questions}+
+            <div className="flex flex-col items-center group">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
+                    <CheckCircle className="text-green-400" size={28} /> {stats.questions}+
                 </div>
                 <div className="text-sm text-slate-500">Test Savollari</div>
             </div>
-            <div className="flex flex-col items-center">
-                <div className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
-                    <Users className="text-purple-400" size={24} /> {stats.users}+
+            <div className="flex flex-col items-center group">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
+                    <Users className="text-purple-400" size={28} /> {stats.users}+
                 </div>
                 <div className="text-sm text-slate-500">O'quvchilar</div>
             </div>
-            <div className="flex flex-col items-center">
-                <div className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
-                    <Award className="text-yellow-400" size={24} /> 24/7
+            <div className="flex flex-col items-center group">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
+                    <Award className="text-yellow-400" size={28} /> {stats.certificates}+
                 </div>
-                <div className="text-sm text-slate-500">Qo'llab-quvvatlash</div>
+                <div className="text-sm text-slate-500">Sertifikatlar</div>
             </div>
         </div>
     );

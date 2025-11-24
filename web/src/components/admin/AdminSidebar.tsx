@@ -7,13 +7,13 @@ import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-    { name: 'Overview', href: '/admin', icon: LayoutDashboard },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Tests', href: '/admin/tests', icon: FileText },
-    { name: 'Quick Tests', href: '/admin/quick-tests', icon: Zap },
-    { name: 'Certificates', href: '/admin/certificates', icon: Award },
-    { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Bosh sahifa', href: '/admin', icon: LayoutDashboard },
+    { name: 'Foydalanuvchilar', href: '/admin/users', icon: Users },
+    { name: 'Testlar', href: '/admin/tests', icon: FileText },
+    { name: 'Tezkor Testlar', href: '/admin/quick-tests', icon: Zap },
+    { name: 'Sertifikatlar', href: '/admin/certificates', icon: Award },
+    { name: 'Reyting', href: '/admin/leaderboard', icon: Trophy },
+    { name: 'Analitika', href: '/admin/analytics', icon: BarChart3 },
 ];
 
 interface AdminSidebarProps {
@@ -79,11 +79,11 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }: AdminSideba
             <div className="p-4 border-t border-slate-800">
                 <button
                     onClick={handleLogout}
-                    title={isCollapsed ? 'Logout' : ''}
+                    title={isCollapsed ? 'Chiqish' : ''}
                     className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <LogOut size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span className="font-medium whitespace-nowrap">Logout</span>}
+                    {!isCollapsed && <span className="font-medium whitespace-nowrap">Chiqish</span>}
                 </button>
             </div>
         </aside>
