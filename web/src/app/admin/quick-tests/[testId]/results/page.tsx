@@ -85,11 +85,15 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                 let totalScore = 0;
                 let totalQuestions = 0;
                 let totalTime = 0;
+                const allAnswers: any[] = [];
 
                 user.bestResults.forEach(r => {
                     totalScore += r.score;
                     totalQuestions += r.totalQuestions;
                     totalTime += r.timeSpentSeconds;
+                    if (r.answers) {
+                        allAnswers.push(...r.answers);
+                    }
                 });
 
                 return {
@@ -102,7 +106,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                     levelNumber: 0,
                     testId,
                     levelId: '',
-                    answers: [],
+                    answers: allAnswers,
                     completedAt: { toDate: () => new Date() } as any
                 };
             });
@@ -370,64 +374,78 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                         <div className="flex-1 overflow-y-auto p-6">
                             {viewingResult.answers && viewingResult.answers.length > 0 ? (
                                 <div className="space-y-4">
-                                    {(() => {
-                                        const currentLevel = levels.find(l => l.levelId === viewingResult.levelId);
-                                        if (!currentLevel) return <p className="text-slate-400">Bosqich topilmadi</p>;
+                                    {levels.map(level => {
+                                        const levelQuestions = level.questions;
+                                        // Check if there are any answers for this level's questions
+                                        const questionsWithAnswers = levelQuestions.filter(q =>
+                                            viewingResult.answers?.some(a => a.questionId === q.questionId)
+                                        );
 
-                                        return currentLevel.questions.map((question, idx) => {
-                                            const answer = viewingResult.answers?.find(a => a.questionId === question.questionId);
-                                            if (!answer) return null;
+                                        if (questionsWithAnswers.length === 0) return null;
 
-                                            const selectedOption = question.options.find(o => o.optionId === answer.selectedOptionId);
-                                            const correctOption = question.options.find(o => o.isCorrect);
-                                            const isCorrect = answer.isCorrect;
-
-                                            return (
-                                                <div key={question.questionId} className={`p-4 rounded-xl border ${isCorrect ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'
-                                                    }`}>
-                                                    <div className="flex gap-3">
-                                                        <span className="text-slate-500 font-mono">{idx + 1}.</span>
-                                                        <div className="flex-1 space-y-3">
-                                                            <p className="text-white font-medium">
-                                                                {question.questionText}
-                                                            </p>
-
-                                                            {question.imageUrl && (
-                                                                <img
-                                                                    src={question.imageUrl}
-                                                                    alt="Savol rasmi"
-                                                                    className="max-w-full max-h-64 rounded-lg border border-slate-700"
-                                                                    onError={(e) => e.currentTarget.style.display = 'none'}
-                                                                />
-                                                            )}
-
-                                                            <div className="space-y-2 text-sm">
-                                                                <div className={`flex items-center gap-2 p-2 rounded-lg ${isCorrect ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                                                                    }`}>
-                                                                    {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                                                                    <span className="font-medium">Javob: {selectedOption?.text || 'Belgilanmagan'}</span>
-                                                                </div>
-
-                                                                {!isCorrect && (
-                                                                    <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-400">
-                                                                        <CheckCircle2 size={16} />
-                                                                        <span className="font-medium">To'g'ri javob: {correctOption?.text}</span>
-                                                                    </div>
-                                                                )}
-
-                                                                {question.explanation && (
-                                                                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                                                        <p className="text-xs font-semibold mb-1">Tushuntirish:</p>
-                                                                        <p className="text-sm">{question.explanation}</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                        return (
+                                            <div key={level.levelId} className="mb-8 last:mb-0">
+                                                <div className="flex items-center gap-2 mb-4 sticky top-0 bg-slate-900 py-2 z-10 border-b border-slate-800">
+                                                    <div className="h-6 w-1 bg-cyan-500 rounded-full"></div>
+                                                    <h3 className="text-lg font-bold text-white">{level.title}</h3>
                                                 </div>
-                                            );
-                                        });
-                                    })()}
+
+                                                <div className="space-y-4">
+                                                    {questionsWithAnswers.map((question, idx) => {
+                                                        const answer = viewingResult.answers?.find(a => a.questionId === question.questionId);
+                                                        if (!answer) return null;
+
+                                                        const selectedOption = question.options.find(o => o.optionId === answer.selectedOptionId);
+                                                        const correctOption = question.options.find(o => o.isCorrect);
+                                                        const isCorrect = answer.isCorrect;
+
+                                                        return (
+                                                            <div key={question.questionId} className={`p-4 rounded-xl border ${isCorrect ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                                                <div className="flex gap-3">
+                                                                    <span className="text-slate-500 font-mono">{idx + 1}.</span>
+                                                                    <div className="flex-1 space-y-3">
+                                                                        <p className="text-white font-medium">
+                                                                            {question.questionText}
+                                                                        </p>
+
+                                                                        {question.imageUrl && (
+                                                                            <img
+                                                                                src={question.imageUrl}
+                                                                                alt="Savol rasmi"
+                                                                                className="max-w-full max-h-64 rounded-lg border border-slate-700"
+                                                                                onError={(e) => e.currentTarget.style.display = 'none'}
+                                                                            />
+                                                                        )}
+
+                                                                        <div className="space-y-2 text-sm">
+                                                                            <div className={`flex items-center gap-2 p-2 rounded-lg ${isCorrect ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                                                {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                                                                                <span className="font-medium">Javob: {selectedOption?.text || 'Belgilanmagan'}</span>
+                                                                            </div>
+
+                                                                            {!isCorrect && (
+                                                                                <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-400">
+                                                                                    <CheckCircle2 size={16} />
+                                                                                    <span className="font-medium">To'g'ri javob: {correctOption?.text}</span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {question.explanation && (
+                                                                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                                                    <p className="text-xs font-semibold mb-1">Tushuntirish:</p>
+                                                                                    <p className="text-sm">{question.explanation}</p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className="text-center text-slate-400 py-12">Javoblar topilmadi</p>

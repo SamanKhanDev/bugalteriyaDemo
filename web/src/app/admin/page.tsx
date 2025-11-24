@@ -57,10 +57,15 @@ export default function AdminOverviewPage() {
                 // Also count quick test questions
                 const quickTestsSnapshot = await getDocs(collection(db, 'quickTests'));
                 for (const quickTestDoc of quickTestsSnapshot.docs) {
-                    const questionsSnapshot = await getDocs(
-                        collection(db, 'quickTests', quickTestDoc.id, 'questions')
+                    const levelsSnapshot = await getDocs(
+                        collection(db, 'quickTests', quickTestDoc.id, 'levels')
                     );
-                    questionCount += questionsSnapshot.size;
+                    levelsSnapshot.docs.forEach(levelDoc => {
+                        const levelData = levelDoc.data();
+                        if (Array.isArray(levelData.questions)) {
+                            questionCount += levelData.questions.length;
+                        }
+                    });
                 }
 
                 setStats(prev => ({

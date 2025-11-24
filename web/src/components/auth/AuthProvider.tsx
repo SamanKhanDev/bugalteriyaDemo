@@ -62,15 +62,20 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }, [setUser, setLoadingAuth]);
 
     // Protected Route Logic
+    // Protected Route Logic
     useEffect(() => {
-        const publicPaths = ['/', '/auth/login', '/auth/register', '/admin/auth'];
-        const isPublicPath = publicPaths.includes(pathname);
+        const authPaths = ['/auth/login', '/auth/register', '/admin/auth'];
+        const publicPaths = ['/', ...authPaths];
+        const isPublicPath = publicPaths.includes(pathname) || pathname.startsWith('/quick-tests');
+        const isAuthPath = authPaths.includes(pathname);
 
+        // Redirect unauthenticated users from protected routes
         if (!isLoadingAuth && !user && !isPublicPath) {
             router.push('/auth/login');
         }
 
-        if (!isLoadingAuth && user && isPublicPath && pathname !== '/') {
+        // Redirect authenticated users ONLY from auth pages (login/register)
+        if (!isLoadingAuth && user && isAuthPath) {
             if (user.role === 'admin') {
                 router.push('/admin');
             } else {

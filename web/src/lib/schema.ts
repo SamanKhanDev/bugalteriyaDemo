@@ -140,6 +140,7 @@ export interface QuickTestResult {
     testId: string;
     userId: string;
     userName: string;
+    isGuest?: boolean; // true if user is a guest
     levelId: string;
     levelNumber: number;
     score: number; // correct answers count
@@ -150,5 +151,6 @@ export interface QuickTestResult {
         selectedOptionId: string;
         isCorrect: boolean;
     }>;
+    startedAt?: Timestamp; // when the test was started
     completedAt: Timestamp;
 }

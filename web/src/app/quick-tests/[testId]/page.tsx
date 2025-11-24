@@ -22,6 +22,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const { user } = useStore();
     const router = useRouter();
 
+    const [guestUser, setGuestUser] = useState<any>(null);
+    const activeUser = user || guestUser;
+
     const [test, setTest] = useState<QuickTest | null>(null);
     const [levels, setLevels] = useState<QuickTestLevel[]>([]);
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
@@ -31,29 +34,44 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const [loading, setLoading] = useState(true);
     const [showResults, setShowResults] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [levelStartTimes, setLevelStartTimes] = useState<Map<string, number>>(new Map());
+    const [lastLevelEndTime, setLastLevelEndTime] = useState<number>(0);
     const [levelDurations, setLevelDurations] = useState<Map<string, number>>(new Map());
+    const [testStartTime, setTestStartTime] = useState<number>(0);
+
+    // Load guest user
+    useEffect(() => {
+        const storedGuest = localStorage.getItem('guestUser');
+        if (storedGuest) {
+            try {
+                setGuestUser(JSON.parse(storedGuest));
+            } catch (e) {
+                console.error('Error parsing guest user:', e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         loadTest();
     }, [testId]);
 
+    // Initialize timer when levels are loaded
     useEffect(() => {
         if (levels.length > 0) {
-            setLevelStartTimes(new Map([[levels[0].levelId, Date.now()]]));
+            const now = Date.now();
+            setLastLevelEndTime(now);
+            setTestStartTime(now);
         }
     }, [levels]);
 
+    // Timer interval for UI
     useEffect(() => {
         const interval = setInterval(() => {
             if (levels.length > 0) {
-                const currentLevelId = levels[currentLevelIndex].levelId;
-                const startTime = levelStartTimes.get(currentLevelId) || Date.now();
-                setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
+                setTimeElapsed(Math.floor((Date.now() - lastLevelEndTime) / 1000));
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, [currentLevelIndex, levels, levelStartTimes]);
+    }, [levels, lastLevelEndTime]);
 
     const loadTest = async () => {
         try {
@@ -112,46 +130,47 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
         const isCorrect = currentQuestion.options.find(o => o.optionId === optionId)?.isCorrect || false;
 
-        setAnswers([...answers, {
+        const newAnswer: Answer = {
             questionId: currentQuestion.questionId,
             selectedOptionId: optionId,
             isCorrect
-        }]);
+        };
+
+        const updatedAnswers = [...answers, newAnswer];
+        setAnswers(updatedAnswers);
 
         setTimeout(() => {
             if (currentQuestionIndex < currentLevel.questions.length - 1) {
                 setCurrentQuestionIndex(currentQuestionIndex + 1);
-            } else if (currentLevelIndex < levels.length - 1) {
-                const currentLevelId = currentLevel.levelId;
-                const startTime = levelStartTimes.get(currentLevelId) || Date.now();
-                const duration = Math.floor((Date.now() - startTime) / 1000);
-
-                setLevelDurations(prev => new Map(prev).set(currentLevelId, duration));
-
-                const nextLevelId = levels[currentLevelIndex + 1].levelId;
-                setLevelStartTimes(prev => new Map(prev).set(nextLevelId, Date.now()));
-
-                setCurrentLevelIndex(currentLevelIndex + 1);
-                setCurrentQuestionIndex(0);
             } else {
-                const currentLevelId = currentLevel.levelId;
-                const startTime = levelStartTimes.get(currentLevelId) || Date.now();
-                const duration = Math.floor((Date.now() - startTime) / 1000);
+                // Level finished
+                const now = Date.now();
+                const duration = Math.floor((now - lastLevelEndTime) / 1000);
 
-                const finalDurations = new Map(levelDurations);
-                finalDurations.set(currentLevelId, duration);
+                // Update durations map
+                const newDurations = new Map(levelDurations);
+                newDurations.set(currentLevel.levelId, duration);
+                setLevelDurations(newDurations);
+                setLastLevelEndTime(now);
 
-                submitTest(finalDurations);
+                if (currentLevelIndex < levels.length - 1) {
+                    // Move to next level
+                    setCurrentLevelIndex(currentLevelIndex + 1);
+                    setCurrentQuestionIndex(0);
+                } else {
+                    // Test finished
+                    submitTest(newDurations, updatedAnswers);
+                }
             }
         }, 600);
     };
 
-    const submitTest = async (finalDurations: Map<string, number>) => {
+    const submitTest = async (finalDurations: Map<string, number>, finalAnswers: Answer[]) => {
         setSubmitting(true);
         try {
             for (let i = 0; i < levels.length; i++) {
                 const level = levels[i];
-                const levelAnswers = answers.filter(a =>
+                const levelAnswers = finalAnswers.filter(a =>
                     level.questions.some(q => q.questionId === a.questionId)
                 );
                 const levelScore = levelAnswers.filter(a => a.isCorrect).length;
@@ -159,14 +178,16 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
                 await addDoc(collection(db, 'quickTestResults'), {
                     testId,
-                    userId: user?.userId,
-                    userName: user?.name,
+                    userId: activeUser?.userId || `guest_${Date.now()}`,
+                    userName: activeUser?.name || 'Mehmon',
+                    isGuest: activeUser?.isGuest || false,
                     levelId: level.levelId,
                     levelNumber: level.levelNumber,
                     score: levelScore,
                     totalQuestions: level.questions.length,
                     timeSpentSeconds: levelDuration,
                     answers: levelAnswers,
+                    startedAt: Timestamp.fromMillis(testStartTime),
                     completedAt: Timestamp.now()
                 });
             }
