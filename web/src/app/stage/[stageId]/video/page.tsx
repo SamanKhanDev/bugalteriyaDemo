@@ -28,6 +28,7 @@ export default function VideoPage() {
     const [playedSeconds, setPlayedSeconds] = useState(0);
     const [isCompleted, setIsCompleted] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const playerRef = useRef<any>(null);
 
     useEffect(() => {
@@ -268,24 +269,21 @@ export default function VideoPage() {
                                         />
                                     ) : (
                                         <ReactPlayer
-                                            ref={playerRef}
-                                            url={stage.videoUrl}
-                                            width="100%"
-                                            height="100%"
-                                            controls
-                                            onProgress={handleProgress}
-                                            onReady={() => {
-                                                if (playerRef.current) {
-                                                    setDuration(playerRef.current.getDuration());
-                                                }
-                                            }}
-                                            onPause={handlePause}
-                                            onEnded={handleEnded}
-                                            config={{
-                                                youtube: {
-                                                    playerVars: { showinfo: 1 }
-                                                }
-                                            }}
+                                            {...({
+                                                ref: playerRef,
+                                                url: stage.videoUrl,
+                                                width: "100%",
+                                                height: "100%",
+                                                controls: true,
+                                                onProgress: handleProgress,
+                                                onReady: () => {
+                                                    if (playerRef.current) {
+                                                        setDuration(playerRef.current.getDuration());
+                                                    }
+                                                },
+                                                onPause: handlePause,
+                                                onEnded: handleEnded
+                                            } as any)}
                                         />
                                     )
                                 ) : (
