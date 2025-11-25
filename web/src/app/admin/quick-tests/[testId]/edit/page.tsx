@@ -398,13 +398,13 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                     </summary>
                                     <div className="p-4 border-t border-slate-700">
                                         <p className="text-xs text-slate-400 mb-3">
-                                            Quyidagi formatda JSON kiriting:
+                                            Quyidagi formatda JSON kiriting (Google Drive linklar avtomatik konvert qilinadi):
                                         </p>
                                         <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 mb-3 overflow-x-auto">
                                             {`[
   {
     "questionText": "Savol matni?",
-    "imageUrl": "https://drive.google.com/uc?id=FILE_ID (ixtiyoriy)",
+    "imageUrl": "https://drive.google.com/file/d/FILE_ID/view (ixtiyoriy)",
     "explanation": "Tushuntirish",
     "options": [
       { "text": "Variant 1", "isCorrect": false },
@@ -433,17 +433,36 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                                         alert('JSON array formatida bo\'lishi kerak');
                                                         return;
                                                     }
-                                                    const importedQuestions = parsed.map((q: any) => ({
-                                                        questionId: crypto.randomUUID(),
-                                                        questionText: q.questionText || q.question,
-                                                        imageUrl: q.imageUrl || '',
-                                                        explanation: q.explanation || '',
-                                                        options: q.options.map((opt: any) => ({
-                                                            optionId: crypto.randomUUID(),
-                                                            text: opt.text,
-                                                            isCorrect: opt.isCorrect || false
-                                                        }))
-                                                    }));
+                                                    const importedQuestions = parsed.map((q: any) => {
+                                                        let imageUrl = q.imageUrl || '';
+
+                                                        // Auto-convert Google Drive share link to direct image URL
+                                                        if (imageUrl.includes('drive.google.com')) {
+                                                            // Format 1: /file/d/FILE_ID/view
+                                                            let match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                                                            if (match && match[1]) {
+                                                                imageUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                                                            } else {
+                                                                // Format 2: /open?id=FILE_ID
+                                                                match = imageUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                                                                if (match && match[1]) {
+                                                                    imageUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                                                                }
+                                                            }
+                                                        }
+
+                                                        return {
+                                                            questionId: crypto.randomUUID(),
+                                                            questionText: q.questionText || q.question,
+                                                            imageUrl,
+                                                            explanation: q.explanation || '',
+                                                            options: q.options.map((opt: any) => ({
+                                                                optionId: crypto.randomUUID(),
+                                                                text: opt.text,
+                                                                isCorrect: opt.isCorrect || false
+                                                            }))
+                                                        };
+                                                    });
 
                                                     setLevels(levels.map(l =>
                                                         l.levelId === level.levelId
@@ -486,22 +505,62 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                             placeholder="Savol matni"
                                         />
 
-                                        <input
-                                            type="text"
-                                            value={question.imageUrl || ''}
-                                            onChange={(e) => updateQuestion(level.levelId, question.questionId, 'imageUrl', e.target.value)}
-                                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-cyan-500 transition-colors mb-3"
-                                            placeholder="Rasm URL (Google Drive link - ixtiyoriy)"
-                                        />
+
+                                        <div className="mb-3">
+                                            <label className="block text-xs text-slate-400 mb-1">
+                                                Rasm URL (ixtiyoriy) - Google Drive linkini joylashtiring
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={question.imageUrl || ''}
+                                                onChange={(e) => {
+                                                    let url = e.target.value.trim();
+
+                                                    // Auto-convert Google Drive share link to direct image URL
+                                                    if (url.includes('drive.google.com')) {
+                                                        // Format 1: /file/d/FILE_ID/view
+                                                        let match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                                                        if (match && match[1]) {
+                                                            url = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                                                        } else {
+                                                            // Format 2: /open?id=FILE_ID
+                                                            match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                                                            if (match && match[1]) {
+                                                                url = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    updateQuestion(level.levelId, question.questionId, 'imageUrl', url);
+                                                }}
+                                                className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                                placeholder="https://drive.google.com/file/d/... yoki to'g'ridan-to'g'ri URL"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                💡 Google Drive: Rasmni "Anyone with the link" ga ochiq qiling va linkni joylashtiring
+                                            </p>
+                                        </div>
+
 
                                         {question.imageUrl && (
-                                            <div className="mb-3 p-2 bg-slate-900 rounded-lg border border-slate-700">
+                                            <div className="mb-3 p-3 bg-slate-900 rounded-lg border border-slate-700">
+                                                <p className="text-xs text-slate-400 mb-2">Preview:</p>
                                                 <img
                                                     src={question.imageUrl}
                                                     alt="Savol rasmi"
                                                     className="max-w-full h-auto rounded"
+                                                    onLoad={(e) => {
+                                                        console.log('✅ Admin preview: Rasm yuklandi');
+                                                    }}
                                                     onError={(e) => {
-                                                        e.currentTarget.style.display = 'none';
+                                                        console.error('❌ Admin preview: Rasm yuklanmadi:', question.imageUrl);
+                                                        const parent = e.currentTarget.parentElement;
+                                                        if (parent) {
+                                                            const errorDiv = document.createElement('div');
+                                                            errorDiv.className = 'text-center py-4 text-red-400 text-sm';
+                                                            errorDiv.innerHTML = '⚠️ Rasm yuklanmadi. Link noto\'g\'ri yoki rasm ochiq emas.';
+                                                            e.currentTarget.replaceWith(errorDiv);
+                                                        }
                                                     }}
                                                 />
                                             </div>
@@ -553,7 +612,8 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                             </div>
                         )}
                     </div>
-                ))}
+                ))
+                }
 
                 <button
                     onClick={addLevel}
@@ -562,10 +622,10 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                     <Plus size={20} />
                     Bosqich qo'shish
                 </button>
-            </div>
+            </div >
 
             {/* Actions */}
-            <div className="flex gap-4">
+            < div className="flex gap-4" >
                 <button
                     onClick={() => router.back()}
                     className="px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-colors"
@@ -580,7 +640,7 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                     <Save size={20} />
                     {saving ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

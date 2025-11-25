@@ -73,6 +73,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         return () => clearInterval(interval);
     }, [levels, lastLevelEndTime]);
 
+
     const loadTest = async () => {
         try {
             const testDoc = await getDoc(doc(db, 'quickTests', testId));
@@ -124,6 +125,15 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const totalQuestions = levels.reduce((sum, level) => sum + level.questions.length, 0);
     const answeredQuestions = answers.length;
     const progress = (answeredQuestions / totalQuestions) * 100;
+
+    // Debug: Log image URL when question changes
+    useEffect(() => {
+        if (currentQuestion?.imageUrl) {
+            console.log('🖼️ Savol rasmi URL:', currentQuestion.imageUrl);
+            console.log('📍 Savol:', currentQuestion.questionText?.substring(0, 50) + '...');
+        }
+    }, [currentQuestion]);
+
 
     const handleAnswer = (optionId: string) => {
         if (!currentQuestion) return;
@@ -568,13 +578,33 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                         {/* Question Image */}
                         {currentQuestion.imageUrl && (
                             <div className="mb-6">
-                                <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+                                <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-4">
                                     <img
                                         src={currentQuestion.imageUrl}
                                         alt="Savol rasmi"
-                                        className="w-full h-auto max-h-[400px] object-contain"
+                                        className="w-full h-auto max-h-[400px] object-contain mx-auto"
+                                        onLoad={(e) => {
+                                            console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
+                                        }}
                                         onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
+                                            console.error('❌ RASM YUKLANMADI:', currentQuestion.imageUrl);
+                                            console.error('Xatolik: Rasm topilmadi yoki ochiq emas');
+                                            const parent = e.currentTarget.parentElement;
+                                            if (parent) {
+                                                parent.innerHTML = `
+                                                    <div class="text-center py-8 bg-red-500/10 rounded-lg border-2 border-red-500/30">
+                                                        <div class="text-red-400 mb-3 text-lg font-bold">⚠️ Rasm Yuklanmadi</div>
+                                                        <div class="text-xs text-slate-400 mb-2">URL:</div>
+                                                        <div class="text-xs text-slate-300 break-all px-4 mb-3 font-mono bg-slate-900 py-2 rounded">${currentQuestion.imageUrl}</div>
+                                                        <div class="text-sm text-yellow-400 mb-2">📋 Tekshirish:</div>
+                                                        <div class="text-xs text-slate-400 space-y-1">
+                                                            <div>1. Google Drive'da rasm "Anyone with the link" ga ochiq ekanligini tekshiring</div>
+                                                            <div>2. Linkni yangi tab'da ochib ko'ring</div>
+                                                            <div>3. F12 bosib Console'da batafsil xatolikni ko'ring</div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }
                                         }}
                                     />
                                 </div>

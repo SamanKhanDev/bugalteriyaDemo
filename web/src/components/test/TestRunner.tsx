@@ -10,6 +10,7 @@ import { ChevronRight } from 'lucide-react';
 
 interface QuestionWithOptions extends Question {
     id: string;
+    imageUrl?: string;
     options: (Option & { id: string })[];
 }
 
@@ -248,6 +249,35 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                 <h2 className="text-xl md:text-2xl font-semibold text-white mb-8 leading-relaxed">
                     {currentQuestion.questionText}
                 </h2>
+
+                {/* Question Image */}
+                {currentQuestion.imageUrl && (
+                    <div className="mb-6 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <img
+                            src={currentQuestion.imageUrl}
+                            alt="Savol rasmi"
+                            className="max-w-full h-auto rounded-lg mx-auto"
+                            onLoad={(e) => {
+                                console.log('✅ Rasm yuklandi:', currentQuestion.imageUrl);
+                            }}
+                            onError={(e) => {
+                                console.error('❌ Rasm yuklanmadi:', currentQuestion.imageUrl);
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                    parent.innerHTML = `
+                                        <div class="text-center py-8">
+                                            <div class="text-red-400 mb-2">⚠️ Rasm yuklanmadi</div>
+                                            <div class="text-xs text-slate-500 break-all px-4">${currentQuestion.imageUrl}</div>
+                                            <div class="text-xs text-slate-400 mt-2">
+                                                Google Drive rasmni "Anyone with the link" ga ochiq qiling
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }}
+                        />
+                    </div>
+                )}
 
                 <div className="space-y-4 flex-1">
                     {currentQuestion.options.map((option) => {

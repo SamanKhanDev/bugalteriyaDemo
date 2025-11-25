@@ -93,8 +93,8 @@ service cloud.firestore {
 
     // Certificates
     match /certificates/{certificateId} {
-      // Allow authenticated users to list/query certificates (they'll only see their own via client-side filtering)
-      allow list: if isAuthenticated();
+      // Allow public read access for statistics
+      allow read: if true;
       // Users can read their own certificate document
       allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
       // Users can create their own certificate (for auto-issuance)
@@ -126,6 +126,14 @@ service cloud.firestore {
         allow read: if true;
         // Only admins can create/modify levels
         allow write: if isAdmin();
+
+        // Questions subcollection
+        match /questions/{questionId} {
+          // Publicly readable (for users taking tests)
+          allow read: if true;
+          // Only admins can create/modify questions
+          allow write: if isAdmin();
+        }
       }
     }
 
@@ -133,10 +141,16 @@ service cloud.firestore {
     match /quickTestResults/{resultId} {
       // Allow anyone to read results (needed for public leaderboard)
       allow read: if true;
-      // Users can create their own results
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      // Users can update their own results (e.g. if we add more data later)
+      
+      // Allow creation if:
+      // 1. User is authenticated and creating for themselves
+      // 2. OR User is a guest (isGuest is true in data)
+      allow create: if (isAuthenticated() && request.resource.data.userId == request.auth.uid) || 
+                       (request.resource.data.isGuest == true);
+                       
+      // Users can update their own results
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
       // Admins have full access
       allow write: if isAdmin();
     }
