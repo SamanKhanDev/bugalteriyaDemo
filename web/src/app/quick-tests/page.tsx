@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, getDocs, where, orderBy, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { QuickTest } from '@/lib/schema';
-import { Zap, Clock, Layers, Trophy, ArrowRight, Lock } from 'lucide-react';
+import { Zap, Clock, Layers, Trophy, ArrowRight, Lock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
+import { Navbar } from '@/components/layout/Navbar';
+import { useRouter } from 'next/navigation';
 
 export default function UserQuickTestsPage() {
     const { user } = useStore();
+    const router = useRouter();
     const [tests, setTests] = useState<QuickTest[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -40,6 +43,15 @@ export default function UserQuickTestsPage() {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            router.push('/');
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -50,9 +62,26 @@ export default function UserQuickTestsPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-            <div className="max-w-7xl mx-auto px-4 py-12">
+            {user && (
+                <Navbar
+                    userId={user.userId}
+                    userName={user.name}
+                    uniqueId={user.uniqueId}
+                    onLogout={handleLogout}
+                />
+            )}
+
+            <div className="max-w-7xl mx-auto px-4 py-12 pt-24">
                 {/* Header */}
-                <div className="text-center mb-12">
+                <div className="text-center mb-12 relative">
+                    <Link
+                        href="/dashboard"
+                        className="absolute left-0 top-0 hidden md:flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                        <span>Dashboard</span>
+                    </Link>
+
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-sm font-medium mb-4">
                         <Zap size={16} />
                         Tezkor Imtihonlar

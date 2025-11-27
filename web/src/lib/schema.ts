@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface User {
     userId: string;
+    uniqueId: string; // 6-digit unique ID for display
     name: string;
     email: string;
     phone?: string;

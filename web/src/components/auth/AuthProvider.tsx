@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useStore } from '@/store/useStore';
 import { User } from '@/lib/schema';
 import { useRouter, usePathname } from 'next/navigation';
+import { generateUniqueId } from '@/lib/generateUniqueId';
 
 import ActivityTracker from '@/components/layout/ActivityTracker';
 
@@ -31,9 +32,26 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
                 const userDocRef = doc(db, 'users', firebaseUser.uid);
 
                 // Real-time listener for user profile changes
-                unsubscribeProfileRef.current = onSnapshot(userDocRef, (docSnap) => {
+                unsubscribeProfileRef.current = onSnapshot(userDocRef, async (docSnap) => {
                     if (docSnap.exists()) {
-                        setUser(docSnap.data() as User);
+                        const userData = docSnap.data() as User;
+
+                        // Check if user doesn't have uniqueId and add it
+                        if (!userData.uniqueId) {
+                            try {
+                                console.log('🔄 Generating uniqueId for existing user:', userData.name);
+                                const uniqueId = await generateUniqueId();
+                                await updateDoc(userDocRef, { uniqueId });
+                                console.log('✅ UniqueId generated:', uniqueId);
+                                // The onSnapshot will automatically update with the new data
+                            } catch (error) {
+                                console.error('❌ Failed to generate uniqueId:', error);
+                                // Still set the user even if uniqueId generation fails
+                                setUser(userData);
+                            }
+                        } else {
+                            setUser(userData);
+                        }
                     } else {
                         // User authenticated but doc doesn't exist yet (e.g. during registration)
                         console.log('User document not found yet');

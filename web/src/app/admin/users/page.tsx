@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { User } from '@/lib/schema';
-import { Users, Clock, Calendar, BarChart2, Lock, Key, Timer } from 'lucide-react';
+import { Users, Clock, Calendar, BarChart2, Lock, Key, Timer, Copy, Check, Zap } from 'lucide-react';
 import AddTimeModal from '@/components/admin/AddTimeModal';
 import UserProgressModal from '@/components/admin/UserProgressModal';
+import { generateUniqueId } from '@/lib/generateUniqueId';
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -18,6 +19,8 @@ export default function AdminUsersPage() {
     const [showModal, setShowModal] = useState(false);
     const [resetLoading, setResetLoading] = useState<string | null>(null);
     const [setPasswordLoading, setSetPasswordLoading] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [generatingIds, setGeneratingIds] = useState(false);
 
     useEffect(() => {
         const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
@@ -72,6 +75,16 @@ export default function AdminUsersPage() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleCopyId = async (uniqueId: string) => {
+        try {
+            await navigator.clipboard.writeText(uniqueId);
+            setCopiedId(uniqueId);
+            setTimeout(() => setCopiedId(null), 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+        }
     };
 
     const handleAddTime = (user: User) => {
@@ -144,6 +157,45 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleGenerateAllIds = async () => {
+        const usersWithoutId = users.filter(u => !u.uniqueId);
+
+        if (usersWithoutId.length === 0) {
+            alert('Barcha foydalanuvchilar allaqachon ID ga ega!');
+            return;
+        }
+
+        if (!confirm(`${usersWithoutId.length} ta foydalanuvchiga ID yaratilsinmi?`)) {
+            return;
+        }
+
+        setGeneratingIds(true);
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            for (const user of usersWithoutId) {
+                try {
+                    const uniqueId = await generateUniqueId();
+                    const userRef = doc(db, 'users', user.userId);
+                    await updateDoc(userRef, { uniqueId });
+                    successCount++;
+                    console.log(`✅ ID generated for ${user.name}: ${uniqueId}`);
+                } catch (error) {
+                    errorCount++;
+                    console.error(`❌ Failed to generate ID for ${user.name}:`, error);
+                }
+            }
+
+            alert(`✅ Tayyor!\n\nMuvaffaqiyatli: ${successCount}\nXatolik: ${errorCount}`);
+        } catch (error) {
+            console.error('Bulk ID generation error:', error);
+            alert('Xatolik yuz berdi!');
+        } finally {
+            setGeneratingIds(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -154,9 +206,28 @@ export default function AdminUsersPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Foydalanuvchilar</h1>
-                <p className="text-slate-400">Barcha foydalanuvchilarni boshqaring (Real-time)</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">Foydalanuvchilar</h1>
+                    <p className="text-slate-400">Barcha foydalanuvchilarni boshqaring (Real-time)</p>
+                </div>
+                <button
+                    onClick={handleGenerateAllIds}
+                    disabled={generatingIds || users.filter(u => !u.uniqueId).length === 0}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {generatingIds ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>ID lar yaratilmoqda...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Zap size={20} />
+                            <span>Barcha ID larni yaratish ({users.filter(u => !u.uniqueId).length})</span>
+                        </>
+                    )}
+                </button>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
@@ -165,6 +236,7 @@ export default function AdminUsersPage() {
                         <thead className="bg-slate-800/50">
                             <tr>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Ism</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">User ID</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Email</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Telefon</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Rol</th>
@@ -188,9 +260,29 @@ export default function AdminUsersPage() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-white">{user.name}</div>
-                                                    <div className="text-xs text-slate-500">ID: {user.userId.slice(0, 8)}...</div>
+                                                    <div className="text-xs text-slate-500">UID: {user.userId.slice(0, 8)}...</div>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.uniqueId ? (
+                                                <button
+                                                    onClick={() => handleCopyId(user.uniqueId)}
+                                                    className="group flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg transition-all"
+                                                    title="Click to copy"
+                                                >
+                                                    <span className="font-mono font-bold text-purple-300">
+                                                        {user.uniqueId}
+                                                    </span>
+                                                    {copiedId === user.uniqueId ? (
+                                                        <Check size={14} className="text-green-400" />
+                                                    ) : (
+                                                        <Copy size={14} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    )}
+                                                </button>
+                                            ) : (
+                                                <span className="text-slate-500 text-sm italic">No ID</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-slate-300">{user.email}</td>
                                         <td className="px-6 py-4 text-slate-300">{user.phone || 'N/A'}</td>

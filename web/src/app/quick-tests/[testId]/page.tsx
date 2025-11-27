@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { doc, getDoc, collection, query, orderBy, getDocs, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 import { QuickTest, QuickTestLevel } from '@/lib/schema';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
-import { Clock, Trophy, Target, Zap, CheckCircle2, XCircle, Layers, Download } from 'lucide-react';
+import { Clock, Trophy, Target, Zap, CheckCircle2, XCircle, Layers, Download, LogOut } from 'lucide-react';
 import { use } from 'react';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { GlobalTimer } from '@/components/common/GlobalTimer';
 
 interface Answer {
     questionId: string;
@@ -37,6 +39,8 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const [lastLevelEndTime, setLastLevelEndTime] = useState<number>(0);
     const [levelDurations, setLevelDurations] = useState<Map<string, number>>(new Map());
     const [testStartTime, setTestStartTime] = useState<number>(0);
+    const [startCountdown, setStartCountdown] = useState(3);
+    const [isStarting, setIsStarting] = useState(true);
 
     // Load guest user
     useEffect(() => {
@@ -54,14 +58,14 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         loadTest();
     }, [testId]);
 
-    // Initialize timer when levels are loaded
+    // Initialize timer when levels are loaded and countdown is finished
     useEffect(() => {
-        if (levels.length > 0) {
+        if (levels.length > 0 && !isStarting) {
             const now = Date.now();
             setLastLevelEndTime(now);
             setTestStartTime(now);
         }
-    }, [levels]);
+    }, [levels, isStarting]);
 
     // Timer interval for UI
     useEffect(() => {
@@ -72,6 +76,28 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }, 1000);
         return () => clearInterval(interval);
     }, [levels, lastLevelEndTime]);
+
+    // Countdown logic
+    useEffect(() => {
+        if (!loading && levels.length > 0 && startCountdown > 0) {
+            const timer = setTimeout(() => setStartCountdown(prev => prev - 1), 1000);
+            return () => clearTimeout(timer);
+        } else if (startCountdown === 0) {
+            setIsStarting(false);
+        }
+    }, [startCountdown, loading, levels.length]);
+
+    // Prevent window close
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!showResults) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [showResults]);
 
 
     const loadTest = async () => {
@@ -217,6 +243,19 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const handleLogout = async () => {
+        if (confirm('Tizimdan chiqmoqchimisiz? Imtihon natijalari saqlanmasligi mumkin.')) {
+            try {
+                await signOut(auth);
+                // Clear guest data if any
+                localStorage.removeItem('guestUser');
+                router.push(`/quick-tests/public/${testId}`);
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        }
+    };
+
     const downloadCertificate = async () => {
         if (!user || !test) return;
 
@@ -340,6 +379,20 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
                     <p className="text-slate-400">Yuklanmoqda...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isStarting && !loading && levels.length > 0) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                <div className="text-center animate-in fade-in zoom-in duration-300">
+                    <div className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 mb-8">
+                        {startCountdown}
+                    </div>
+                    <p className="text-2xl text-white font-medium">Imtihon boshlanmoqda...</p>
+                    <p className="text-slate-400 mt-2">Tayyorlaning!</p>
                 </div>
             </div>
         );
@@ -529,9 +582,29 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 {currentLevel.title} • Savol {currentQuestionIndex + 1}/{currentLevel.questions.length}
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg">
-                            <Clock className="text-cyan-400" size={16} />
-                            <span className="text-white font-mono text-sm">{formatTime(timeElapsed)}</span>
+                        <div className="flex items-center gap-3">
+                            {/* Global Timer for registered users */}
+                            {activeUser && !activeUser.isGuest && (
+                                <GlobalTimer
+                                    userId={activeUser.userId}
+                                    variant="navbar"
+                                    className="scale-90 opacity-80 hover:opacity-100 transition-opacity"
+                                />
+                            )}
+                            {/* Exam Timer */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                                <Clock className="text-cyan-400" size={16} />
+                                <span className="text-white font-mono text-sm">{formatTime(timeElapsed)}</span>
+                            </div>
+
+                            {/* Logout Button */}
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                                title="Chiqish"
+                            >
+                                <LogOut size={20} />
+                            </button>
                         </div>
                     </div>
 

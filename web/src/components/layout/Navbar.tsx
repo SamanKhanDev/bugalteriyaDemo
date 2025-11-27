@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { doc, onSnapshot, updateDoc, Timestamp, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { doc, onSnapshot, updateDoc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { User } from 'firebase/auth';
-import { UserTimer } from '@/lib/schema';
-import TimeExpiredModal from '@/components/modals/TimeExpiredModal';
-import { Bell, Check, X } from 'lucide-react';
+import { Bell, Check, Copy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { GlobalTimer } from '@/components/common/GlobalTimer';
 
 interface NavbarProps {
     userId: string;
     userName: string;
+    uniqueId?: string; // 6-digit unique ID
     onLogout: () => void;
 }
 
@@ -23,76 +23,16 @@ interface Notification {
     createdAt: any;
 }
 
-const SYNC_INTERVAL_MS = 30000; // 30 seconds
-
-export const Navbar: React.FC<NavbarProps> = ({ userId, userName, onLogout }) => {
+export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLogout }) => {
     const router = useRouter();
-    const [remainingTime, setRemainingTime] = useState<number | null>(null);
-    const [isExpired, setIsExpired] = useState(false);
-    const [showExpiredModal, setShowExpiredModal] = useState(false);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastSyncedRef = useRef<number>(Date.now());
-    const localTimeRef = useRef<number>(0);
 
     // Notification state
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m
-            .toString()
-            .padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
-
-    // Timer listener
-    useEffect(() => {
-        if (!userId) return;
-        let unsubscribeTimer: () => void;
-        const unsubscribeAuth = auth.onAuthStateChanged((firebaseUser: User | null) => {
-            if (firebaseUser && firebaseUser.uid === userId) {
-                const timerDocRef = doc(db, 'userTimers', userId);
-                unsubscribeTimer = onSnapshot(
-                    timerDocRef,
-                    (docSnap) => {
-                        if (docSnap.exists()) {
-                            const data = docSnap.data() as UserTimer;
-                            const serverTime = data.remainingTime;
-                            const isSignificantlyGreater = serverTime > localTimeRef.current + 5;
-                            const isValidReset =
-                                localTimeRef.current === 0 ? serverTime > 30 : isSignificantlyGreater;
-                            if (localTimeRef.current === 0 && remainingTime === null) {
-                                setRemainingTime(serverTime);
-                                localTimeRef.current = serverTime;
-                            } else if (isValidReset) {
-                                setRemainingTime(serverTime);
-                                localTimeRef.current = serverTime;
-                                lastSyncedRef.current = Date.now();
-                                if (serverTime > 0) {
-                                    setIsExpired(false);
-                                    setShowExpiredModal(false);
-                                }
-                            }
-                        }
-                    },
-                    (error) => {
-                        if (error?.code !== 'permission-denied') {
-                            console.error('Timer listener error:', error);
-                        }
-                    }
-                );
-            } else {
-                if (unsubscribeTimer) unsubscribeTimer();
-            }
-        });
-        return () => {
-            unsubscribeAuth();
-            if (unsubscribeTimer) unsubscribeTimer();
-        };
-    }, [userId]);
+    // Copy ID state
+    const [copiedId, setCopiedId] = useState(false);
 
     // Notifications listener
     useEffect(() => {
@@ -159,57 +99,19 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, onLogout }) =>
         }
     };
 
-    // Local countdown interval
-    useEffect(() => {
-        if (remainingTime === null) return;
-        timerRef.current = setInterval(() => {
-            setRemainingTime((prev) => {
-                if (prev === null) return null;
-                if (prev <= 0) {
-                    if (prev === 0 && !isExpired) {
-                        setIsExpired(true);
-                        setShowExpiredModal(true);
-                        localTimeRef.current = 0;
-                        syncToFirestore(0);
-                    }
-                    return 0;
-                }
-                const newVal = prev - 1;
-                localTimeRef.current = newVal;
-                const now = Date.now();
-                if (now - lastSyncedRef.current > SYNC_INTERVAL_MS) {
-                    syncToFirestore(newVal);
-                    lastSyncedRef.current = now;
-                }
-                return newVal;
-            });
-        }, 1000);
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [remainingTime, isExpired]);
-
-    const syncToFirestore = async (seconds: number) => {
-        if (!userId) return;
+    const handleCopyId = async () => {
+        if (!uniqueId) return;
         try {
-            const timerDocRef = doc(db, 'userTimers', userId);
-            await updateDoc(timerDocRef, {
-                remainingTime: seconds,
-                lastSyncedAt: Timestamp.now(),
-            });
-        } catch (e) {
-            console.error('Failed to sync timer:', e);
+            await navigator.clipboard.writeText(uniqueId);
+            setCopiedId(true);
+            setTimeout(() => setCopiedId(false), 2000);
+        } catch (error) {
+            console.error('Failed to copy ID:', error);
         }
-    };
-
-    const handleContactAdmin = () => {
-        window.location.href =
-            "mailto:admin@accounting.uz?subject=Vaqt%20Tugadi%20-%20To'lov%20Qilish";
     };
 
     return (
         <>
-            {showExpiredModal && <TimeExpiredModal onContactAdmin={handleContactAdmin} />}
             <nav className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-lg">
                 {/* Logo */}
                 <div className="flex items-center gap-3">
@@ -285,30 +187,45 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, onLogout }) =>
                             </>
                         )}
                     </div>
+                    {/* User ID badge */}
+                    {uniqueId && (
+                        <button
+                            onClick={handleCopyId}
+                            className="group flex items-center gap-2 px-3 py-1.5 rounded-full border bg-purple-500/10 border-purple-500/50 hover:bg-purple-500/20 transition-all cursor-pointer"
+                            title="Click to copy ID"
+                        >
+                            <span className="text-xs text-purple-300 font-medium">ID:</span>
+                            <span className="font-mono font-bold text-purple-200">{uniqueId}</span>
+                            {copiedId ? (
+                                <Check size={14} className="text-green-400" />
+                            ) : (
+                                <Copy size={14} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            )}
+                        </button>
+                    )}
                     {/* Timer badge */}
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isExpired ? 'bg-red-500/10 border-red-500/50 text-red-400' : 'bg-slate-800 border-slate-700'}`}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="font-mono font-medium">
-                            {remainingTime !== null ? formatTime(remainingTime) : '--:--:--'}
-                        </span>
-                    </div>
-                    {/* Profile */}
-                    <div className="flex items-center gap-3 pl-4 border-l border-slate-700">
+                    <GlobalTimer userId={userId} variant="navbar" />
+
+                    {/* User Profile */}
+                    <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
                         <div className="text-right hidden sm:block">
-                            <div className="text-xs text-slate-400">Welcome back,</div>
-                            <div className="text-sm font-medium">{userName}</div>
+                            <div className="text-sm font-medium text-white">{userName}</div>
+                            <div className="text-xs text-slate-400">Foydalanuvchi</div>
                         </div>
-                        <button onClick={onLogout} className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="Logout">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
+                        <div className="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 font-medium border border-slate-700">
+                            {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <button
+                            onClick={onLogout}
+                            className="text-xs text-red-400 hover:text-red-300 transition-colors ml-2"
+                        >
+                            Chiqish
                         </button>
                     </div>
                 </div>
             </nav>
+            {/* Spacer for fixed navbar */}
+            <div className="h-16" />
         </>
     );
 };

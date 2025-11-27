@@ -7,6 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, UserTimer } from '@/lib/schema';
+import { generateUniqueId } from '@/lib/generateUniqueId';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -36,9 +37,13 @@ export default function RegisterPage() {
             // 2. Update Profile
             await updateProfile(user, { displayName: formData.name });
 
-            // 3. Create User Document in Firestore
+            // 3. Generate unique 6-digit ID
+            const uniqueId = await generateUniqueId();
+
+            // 4. Create User Document in Firestore
             const userDoc: User = {
                 userId: user.uid,
+                uniqueId: uniqueId,
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,

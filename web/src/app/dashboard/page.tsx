@@ -219,7 +219,7 @@ export default function DashboardPage() {
 
     if (loading || isLoadingAuth || !user) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-950">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
             </div>
         );
@@ -227,7 +227,7 @@ export default function DashboardPage() {
 
     return (
         <>
-            <Navbar userId={user.userId} userName={user.name} onLogout={handleLogout} />
+            <Navbar userId={user.userId} userName={user.name} uniqueId={user.uniqueId} onLogout={handleLogout} />
             <ActivityTracker />
 
             {/* Progress Menu Button */}
@@ -339,7 +339,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Main Content */}
-            <div className="min-h-screen bg-slate-950 text-slate-100 pt-20 py-8 px-4">
+            <div className="min-h-screen text-slate-100 pt-20 py-8 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">

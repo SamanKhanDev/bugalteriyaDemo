@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { QuickTest } from '@/lib/schema';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, LogIn, UserPlus, Zap } from 'lucide-react';
+import { User, Mail, Lock, LogIn, UserPlus, Zap, AlertCircle } from 'lucide-react';
 import { use } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { generateUniqueId } from '@/lib/generateUniqueId';
+
 
 type AuthMode = 'guest' | 'register' | 'login';
 
@@ -17,6 +18,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
     const router = useRouter();
     const [test, setTest] = useState<QuickTest | null>(null);
     const [loading, setLoading] = useState(true);
+    const [authLoading, setAuthLoading] = useState(true);
     const [authMode, setAuthMode] = useState<AuthMode | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -31,6 +33,19 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
     // Login mode
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+
+    useEffect(() => {
+        // Check if user is already logged in
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                router.push(`/quick-tests/${testId}`);
+            } else {
+                setAuthLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [testId, router]);
 
     useEffect(() => {
         loadTest();
@@ -94,13 +109,18 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
             const userCredential = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
             const user = userCredential.user;
 
+            // Generate unique 6-digit ID
+            const uniqueId = await generateUniqueId();
+
             await setDoc(doc(db, 'users', user.uid), {
                 userId: user.uid,
+                uniqueId: uniqueId,
                 name: regName,
                 email: regEmail,
                 role: 'user',
-                createdAt: new Date(),
-                totalActiveSeconds: 0
+                createdAt: Timestamp.now(),
+                totalActiveSeconds: 0,
+                lastSeen: Timestamp.now()
             });
 
             router.push(`/quick-tests/${testId}`);
@@ -138,7 +158,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
         }
     };
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
                 <div className="text-center">
@@ -161,6 +181,16 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
                 <div className="max-w-4xl w-full">
+                    {/* Notification Banner */}
+                    <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-center gap-3 overflow-hidden">
+                        <AlertCircle className="text-yellow-500 flex-shrink-0" size={24} />
+                        <div className="flex-1 overflow-hidden">
+                            <p className="text-yellow-200/90 text-sm md:text-base leading-relaxed animate-marquee whitespace-nowrap">
+                                Imtihonga kirish uchun va undan to'lov qilib to'liq foydalanishiz uchun to'liq ro'yxatdan o'tishiz talab qilinadi.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Test Info */}
                     <div className="text-center mb-12">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-sm font-medium mb-6">
@@ -191,13 +221,17 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                             </p>
                         </button>
 
-                        {/* Register Mode */}
+                        {/* Register Mode - Highlighted */}
                         <button
                             onClick={() => setAuthMode('register')}
-                            className="group bg-slate-900/50 backdrop-blur border-2 border-slate-800 hover:border-purple-500 rounded-2xl p-8 transition-all hover:scale-105"
+                            className="relative group bg-gradient-to-br from-slate-900/80 to-purple-900/20 backdrop-blur border-2 border-purple-500/50 hover:border-purple-500 rounded-2xl p-8 transition-all hover:scale-105 shadow-lg shadow-purple-500/10 hover:shadow-purple-500/30"
                         >
-                            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
-                                <UserPlus className="text-purple-400" size={32} />
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                                TAVSIYA ETILADI
+                            </div>
+                            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors relative">
+                                <div className="absolute inset-0 bg-purple-500/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                <UserPlus className="text-purple-400 relative z-10" size={32} />
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Ro'yxatdan O'tish</h3>
                             <p className="text-slate-400 text-sm">

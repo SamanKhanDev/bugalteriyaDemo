@@ -24,7 +24,7 @@ service cloud.firestore {
       // Allow public read access for statistics (count queries)
       // This enables landing page to show total user count
       allow read: if true;
-      // Users can update specific fields (e.g. profile photo), but not role or totalActiveSeconds directly if those are system managed
+      // Users can update specific fields (e.g. profile photo, uniqueId), but not role or totalActiveSeconds directly if those are system managed
       allow update: if isOwner(userId) && 
                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
       // Admins have full access
