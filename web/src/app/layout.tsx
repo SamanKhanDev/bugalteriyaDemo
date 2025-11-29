@@ -8,7 +8,7 @@ import { AnimatedBackground } from "@/components/layout/AnimatedBackground";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Accounting Academy",
+  title: "Buxgaltersiz.uz",
   description: "Premium Accounting Learning Platform",
 };
 

@@ -110,6 +110,41 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             }
 
             const testData = { ...testDoc.data(), testId: testDoc.id } as QuickTest;
+
+            // Check availability (Date and Time)
+            const now = new Date();
+
+            // Check specific date if set
+            if (testData.activeDate) {
+                // Get local date string in YYYY-MM-DD format
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const today = `${year}-${month}-${day}`;
+
+                if (testData.activeDate !== today) {
+                    alert(`Bu imtihon faqat ${testData.activeDate} sanasida bo'lib o'tadi`);
+                    router.push('/quick-tests');
+                    return;
+                }
+            }
+
+            // Check time range
+            if (testData.activeTimeFrom && testData.activeTimeTo) {
+                const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+                if (currentTime < testData.activeTimeFrom) {
+                    alert(`Bu imtihon soat ${testData.activeTimeFrom} dan boshlanadi`);
+                    router.push('/quick-tests');
+                    return;
+                }
+                if (currentTime > testData.activeTimeTo) {
+                    alert(`Bu imtihon soat ${testData.activeTimeTo} da tugaydi`);
+                    router.push('/quick-tests');
+                    return;
+                }
+            }
+
             setTest(testData);
 
             const levelsSnapshot = await getDocs(
@@ -656,7 +691,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                         src={currentQuestion.imageUrl}
                                         alt="Savol rasmi"
                                         className="w-full h-auto max-h-[400px] object-contain mx-auto"
-                                        onLoad={(e) => {
+                                        onLoad={() => {
                                             console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
                                         }}
                                         onError={(e) => {

@@ -351,109 +351,198 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
             </div>
 
             {/* Detail Modal */}
-            {viewingResult && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-white mb-1">
-                                    {viewingResult.userName} - Natijalar
-                                </h2>
-                                <p className="text-sm text-slate-400">
-                                    {viewingResult.score} ball • {formatTime(viewingResult.timeSpentSeconds)}
-                                </p>
+            {viewingResult && (() => {
+                // Get all attempts for this user
+                const userAttempts = results
+                    .filter(r => r.userId === viewingResult.userId && r.levelNumber === viewingResult.levelNumber)
+                    .sort((a, b) => b.completedAt.toDate().getTime() - a.completedAt.toDate().getTime());
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-800">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-white">
+                                        {viewingResult.userName} - Natijalar
+                                    </h2>
+                                    <button
+                                        onClick={() => setViewingResult(null)}
+                                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                                    >
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                {/* Current Result Stats */}
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                    <div className="bg-slate-800/50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500 mb-1">Ball</p>
+                                        <p className="text-lg font-bold text-white">{viewingResult.score} / {viewingResult.totalQuestions}</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500 mb-1">Vaqt</p>
+                                        <p className="text-lg font-bold text-white">{formatTime(viewingResult.timeSpentSeconds)}</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500 mb-1">Bosqich</p>
+                                        <p className="text-lg font-bold text-white">
+                                            {viewingResult.levelNumber === 0
+                                                ? 'Barcha'
+                                                : levels.find(l => l.levelNumber === viewingResult.levelNumber)?.title || `${viewingResult.levelNumber}-bosqich`
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Timing Info */}
+                                {viewingResult.startedAt && (
+                                    <div className="grid grid-cols-2 gap-4 p-3 bg-slate-800/30 rounded-xl text-xs">
+                                        <div>
+                                            <p className="text-slate-500 mb-1">Boshlangan vaqt</p>
+                                            <p className="text-slate-300 font-medium">
+                                                {viewingResult.startedAt.toDate().toLocaleString('uz-UZ', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 mb-1">Tugagan vaqt</p>
+                                            <p className="text-slate-300 font-medium">
+                                                {viewingResult.completedAt.toDate().toLocaleString('uz-UZ', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Attempt History */}
+                                {userAttempts.length > 1 && (
+                                    <div className="mt-4">
+                                        <p className="text-sm font-semibold text-slate-300 mb-2">Urinishlar tarixi ({userAttempts.length} ta)</p>
+                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                            {userAttempts.map((attempt, idx) => {
+                                                const isCurrent = attempt.resultId === viewingResult.resultId;
+                                                const percentage = (attempt.score / attempt.totalQuestions) * 100;
+
+                                                return (
+                                                    <button
+                                                        key={attempt.resultId}
+                                                        onClick={() => setViewingResult(attempt)}
+                                                        className={`flex-shrink-0 px-4 py-2 rounded-lg border transition-all ${isCurrent
+                                                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                                                            : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
+                                                            }`}
+                                                    >
+                                                        <div className="text-xs text-slate-500 mb-1">
+                                                            {attempt.completedAt.toDate().toLocaleDateString('uz-UZ')}
+                                                        </div>
+                                                        <div className="font-bold">
+                                                            {attempt.score} ball ({percentage.toFixed(0)}%)
+                                                        </div>
+                                                        <div className="text-xs mt-1">
+                                                            {formatTime(attempt.timeSpentSeconds)}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <button
-                                onClick={() => setViewingResult(null)}
-                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto p-6">
-                            {viewingResult.answers && viewingResult.answers.length > 0 ? (
-                                <div className="space-y-4">
-                                    {levels.map(level => {
-                                        const levelQuestions = level.questions;
-                                        // Check if there are any answers for this level's questions
-                                        const questionsWithAnswers = levelQuestions.filter(q =>
-                                            viewingResult.answers?.some(a => a.questionId === q.questionId)
-                                        );
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {viewingResult.answers && viewingResult.answers.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {levels.map(level => {
+                                            const levelQuestions = level.questions;
+                                            // Check if there are any answers for this level's questions
+                                            const questionsWithAnswers = levelQuestions.filter(q =>
+                                                viewingResult.answers?.some(a => a.questionId === q.questionId)
+                                            );
 
-                                        if (questionsWithAnswers.length === 0) return null;
+                                            if (questionsWithAnswers.length === 0) return null;
 
-                                        return (
-                                            <div key={level.levelId} className="mb-8 last:mb-0">
-                                                <div className="flex items-center gap-2 mb-4 sticky top-0 bg-slate-900 py-2 z-10 border-b border-slate-800">
-                                                    <div className="h-6 w-1 bg-cyan-500 rounded-full"></div>
-                                                    <h3 className="text-lg font-bold text-white">{level.title}</h3>
-                                                </div>
+                                            return (
+                                                <div key={level.levelId} className="mb-8 last:mb-0">
+                                                    <div className="flex items-center gap-2 mb-4 sticky top-0 bg-slate-900 py-2 z-10 border-b border-slate-800">
+                                                        <div className="h-6 w-1 bg-cyan-500 rounded-full"></div>
+                                                        <h3 className="text-lg font-bold text-white">{level.title}</h3>
+                                                    </div>
 
-                                                <div className="space-y-4">
-                                                    {questionsWithAnswers.map((question, idx) => {
-                                                        const answer = viewingResult.answers?.find(a => a.questionId === question.questionId);
-                                                        if (!answer) return null;
+                                                    <div className="space-y-4">
+                                                        {questionsWithAnswers.map((question, idx) => {
+                                                            const answer = viewingResult.answers?.find(a => a.questionId === question.questionId);
+                                                            if (!answer) return null;
 
-                                                        const selectedOption = question.options.find(o => o.optionId === answer.selectedOptionId);
-                                                        const correctOption = question.options.find(o => o.isCorrect);
-                                                        const isCorrect = answer.isCorrect;
+                                                            const selectedOption = question.options.find(o => o.optionId === answer.selectedOptionId);
+                                                            const correctOption = question.options.find(o => o.isCorrect);
+                                                            const isCorrect = answer.isCorrect;
 
-                                                        return (
-                                                            <div key={question.questionId} className={`p-4 rounded-xl border ${isCorrect ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                                                                <div className="flex gap-3">
-                                                                    <span className="text-slate-500 font-mono">{idx + 1}.</span>
-                                                                    <div className="flex-1 space-y-3">
-                                                                        <p className="text-white font-medium">
-                                                                            {question.questionText}
-                                                                        </p>
+                                                            return (
+                                                                <div key={question.questionId} className={`p-4 rounded-xl border ${isCorrect ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                                                    <div className="flex gap-3">
+                                                                        <span className="text-slate-500 font-mono">{idx + 1}.</span>
+                                                                        <div className="flex-1 space-y-3">
+                                                                            <p className="text-white font-medium">
+                                                                                {question.questionText}
+                                                                            </p>
 
-                                                                        {question.imageUrl && (
-                                                                            <img
-                                                                                src={question.imageUrl}
-                                                                                alt="Savol rasmi"
-                                                                                className="max-w-full max-h-64 rounded-lg border border-slate-700"
-                                                                                onError={(e) => e.currentTarget.style.display = 'none'}
-                                                                            />
-                                                                        )}
+                                                                            {question.imageUrl && (
+                                                                                <img
+                                                                                    src={question.imageUrl}
+                                                                                    alt="Savol rasmi"
+                                                                                    className="max-w-full max-h-64 rounded-lg border border-slate-700"
+                                                                                    onError={(e) => e.currentTarget.style.display = 'none'}
+                                                                                />
+                                                                            )}
 
-                                                                        <div className="space-y-2 text-sm">
-                                                                            <div className={`flex items-center gap-2 p-2 rounded-lg ${isCorrect ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                                                                {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                                                                                <span className="font-medium">Javob: {selectedOption?.text || 'Belgilanmagan'}</span>
+                                                                            <div className="space-y-2 text-sm">
+                                                                                <div className={`flex items-center gap-2 p-2 rounded-lg ${isCorrect ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                                                    {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                                                                                    <span className="font-medium">Javob: {selectedOption?.text || 'Belgilanmagan'}</span>
+                                                                                </div>
+
+                                                                                {!isCorrect && (
+                                                                                    <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-400">
+                                                                                        <CheckCircle2 size={16} />
+                                                                                        <span className="font-medium">To'g'ri javob: {correctOption?.text}</span>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {question.explanation && (
+                                                                                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                                                        <p className="text-xs font-semibold mb-1">Tushuntirish:</p>
+                                                                                        <p className="text-sm">{question.explanation}</p>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
-
-                                                                            {!isCorrect && (
-                                                                                <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-400">
-                                                                                    <CheckCircle2 size={16} />
-                                                                                    <span className="font-medium">To'g'ri javob: {correctOption?.text}</span>
-                                                                                </div>
-                                                                            )}
-
-                                                                            {question.explanation && (
-                                                                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                                                                    <p className="text-xs font-semibold mb-1">Tushuntirish:</p>
-                                                                                    <p className="text-sm">{question.explanation}</p>
-                                                                                </div>
-                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p className="text-center text-slate-400 py-12">Javoblar topilmadi</p>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-slate-400 py-12">Javoblar topilmadi</p>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 }

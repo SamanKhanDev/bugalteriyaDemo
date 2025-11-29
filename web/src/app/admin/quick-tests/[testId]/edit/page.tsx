@@ -19,6 +19,9 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
     const [timeLimit, setTimeLimit] = useState<number | undefined>(undefined);
     const [certificateThreshold, setCertificateThreshold] = useState<number | undefined>(undefined);
     const [isActive, setIsActive] = useState(true);
+    const [activeDate, setActiveDate] = useState<string>('');
+    const [activeTimeFrom, setActiveTimeFrom] = useState<string>('');
+    const [activeTimeTo, setActiveTimeTo] = useState<string>('');
     const [levels, setLevels] = useState<QuickTestLevel[]>([]);
     const [collapsedLevels, setCollapsedLevels] = useState<Set<string>>(new Set());
 
@@ -36,6 +39,9 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                 setTimeLimit(testData.timeLimit);
                 setCertificateThreshold(testData.certificateThreshold);
                 setIsActive(testData.isActive);
+                setActiveDate(testData.activeDate || '');
+                setActiveTimeFrom(testData.activeTimeFrom || '');
+                setActiveTimeTo(testData.activeTimeTo || '');
             }
 
             const levelsSnapshot = await getDocs(
@@ -215,6 +221,25 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                 updateData.certificateThreshold = certificateThreshold;
             }
 
+            // Add date and time range
+            if (activeDate) {
+                updateData.activeDate = activeDate;
+            } else {
+                updateData.activeDate = null;
+            }
+
+            if (activeTimeFrom) {
+                updateData.activeTimeFrom = activeTimeFrom;
+            } else {
+                updateData.activeTimeFrom = null;
+            }
+
+            if (activeTimeTo) {
+                updateData.activeTimeTo = activeTimeTo;
+            } else {
+                updateData.activeTimeTo = null;
+            }
+
             await updateDoc(doc(db, 'quickTests', testId), updateData);
 
             const oldLevelsSnapshot = await getDocs(collection(db, 'quickTests', testId, 'levels'));
@@ -326,6 +351,47 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                 />
                                 <span className="text-slate-300">Faol</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Sana (ixtiyoriy)
+                            </label>
+                            <input
+                                type="date"
+                                value={activeDate}
+                                onChange={(e) => setActiveDate(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Agar sana belgilanmasa, har kuni ishlaydi</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Boshlanish vaqti
+                            </label>
+                            <input
+                                type="time"
+                                value={activeTimeFrom}
+                                onChange={(e) => setActiveTimeFrom(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Masalan: 11:00</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Tugash vaqti
+                            </label>
+                            <input
+                                type="time"
+                                value={activeTimeTo}
+                                onChange={(e) => setActiveTimeTo(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Masalan: 15:00</p>
                         </div>
                     </div>
                 </div>
@@ -598,7 +664,7 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                             onClick={() => addOption(level.levelId, question.questionId)}
                                             className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
                                         >
-                                            + Variant qo'shish
+                                            + Variant qo&apos;shish
                                         </button>
                                     </div>
                                 ))}
@@ -607,7 +673,7 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                                     onClick={() => addQuestion(level.levelId)}
                                     className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:border-cyan-500 hover:text-cyan-400 transition-all"
                                 >
-                                    + Savol qo'shish
+                                    + Savol qo&apos;shish
                                 </button>
                             </div>
                         )}
@@ -620,7 +686,7 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                     className="w-full py-4 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:border-cyan-500 hover:text-cyan-400 transition-all flex items-center justify-center gap-2"
                 >
                     <Plus size={20} />
-                    Bosqich qo'shish
+                    Bosqich qo&apos;shish
                 </button>
             </div >
 

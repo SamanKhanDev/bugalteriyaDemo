@@ -5,7 +5,7 @@ import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { User } from '@/lib/schema';
-import { Users, Clock, Calendar, BarChart2, Lock, Key, Timer, Copy, Check, Zap } from 'lucide-react';
+import { Users, Clock, Calendar, BarChart2, Lock, Key, Timer, Copy, Check, Zap, Search } from 'lucide-react';
 import AddTimeModal from '@/components/admin/AddTimeModal';
 import UserProgressModal from '@/components/admin/UserProgressModal';
 import { generateUniqueId } from '@/lib/generateUniqueId';
@@ -20,7 +20,9 @@ export default function AdminUsersPage() {
     const [resetLoading, setResetLoading] = useState<string | null>(null);
     const [setPasswordLoading, setSetPasswordLoading] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
     const [generatingIds, setGeneratingIds] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
@@ -196,6 +198,12 @@ export default function AdminUsersPage() {
         }
     };
 
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.uniqueId && user.uniqueId.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -230,6 +238,18 @@ export default function AdminUsersPage() {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                    type="text"
+                    placeholder="Foydalanuvchilarni qidirish (Ism, Email yoki ID orqali)..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+                />
+            </div>
+
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -247,7 +267,7 @@ export default function AdminUsersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                            {users.map((user) => {
+                            {filteredUsers.map((user) => {
                                 const remainingTime = userTimers[user.userId] || 0;
                                 const isExpired = remainingTime <= 0;
 
@@ -364,7 +384,7 @@ export default function AdminUsersPage() {
                     </table>
                 </div>
 
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                     <div className="text-center py-12 text-slate-400">
                         <Users size={48} className="mx-auto mb-4 text-slate-600" />
                         <p>Hozircha foydalanuvchilar mavjud emas</p>

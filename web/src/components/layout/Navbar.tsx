@@ -116,9 +116,9 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLo
                 {/* Logo */}
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-lg">
-                        A
+                        B
                     </div>
-                    <span className="font-semibold text-lg tracking-tight">Accounting Academy</span>
+                    <span className="font-semibold text-lg tracking-tight">Buxgaltersiz</span>
                 </div>
                 {/* Links */}
                 <div className="hidden md:flex items-center gap-6 text-sm text-slate-400">
