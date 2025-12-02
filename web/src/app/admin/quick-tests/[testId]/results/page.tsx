@@ -288,7 +288,8 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Bosqich</th>
                                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Ball</th>
                                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">To'g'ri</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Vaqt</th>
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Sarflangan vaqt</th>
+                                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Topshirilgan</th>
                                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Amallar</th>
                                 </tr>
                             </thead>
@@ -316,9 +317,71 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-2xl font-bold text-white">{result.score}</span>
-                                                    <span className="text-yellow-400 text-xl">⭐</span>
+                                                <div className="relative group">
+                                                    <div className="flex items-center gap-2 cursor-help">
+                                                        <span className="text-2xl font-bold text-white">{result.score}</span>
+                                                        <span className="text-yellow-400 text-xl">⭐</span>
+                                                    </div>
+
+                                                    {/* Hover Tooltip - History */}
+                                                    {(() => {
+                                                        const userAttempts = results
+                                                            .filter(r => r.userId === result.userId)
+                                                            .sort((a, b) => b.completedAt.toDate().getTime() - a.completedAt.toDate().getTime());
+
+                                                        if (userAttempts.length <= 1) return null;
+
+                                                        return (
+                                                            <div className="absolute left-0 top-full mt-2 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-4">
+                                                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
+                                                                    <Clock size={16} className="text-cyan-400" />
+                                                                    <h4 className="text-sm font-bold text-white">Urinishlar tarixi ({userAttempts.length} ta)</h4>
+                                                                </div>
+                                                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                                    {userAttempts.map((attempt) => {
+                                                                        const attemptPercentage = (attempt.score / attempt.totalQuestions) * 100;
+                                                                        const isCurrent = attempt.resultId === result.resultId;
+
+                                                                        return (
+                                                                            <div
+                                                                                key={attempt.resultId}
+                                                                                className={`p-2 rounded-lg text-xs ${isCurrent ? 'bg-cyan-500/20 border border-cyan-500/30' : 'bg-slate-700/50'}`}
+                                                                            >
+                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                    <span className="text-slate-400">
+                                                                                        {attempt.completedAt.toDate().toLocaleDateString('uz-UZ', {
+                                                                                            year: 'numeric',
+                                                                                            month: '2-digit',
+                                                                                            day: '2-digit'
+                                                                                        })}
+                                                                                    </span>
+                                                                                    <span className="text-slate-400">
+                                                                                        {attempt.completedAt.toDate().toLocaleTimeString('uz-UZ', {
+                                                                                            hour: '2-digit',
+                                                                                            minute: '2-digit'
+                                                                                        })}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="font-bold text-white">
+                                                                                        {attempt.score}/{attempt.totalQuestions} ({attemptPercentage.toFixed(0)}%)
+                                                                                    </span>
+                                                                                    <span className="text-slate-400">
+                                                                                        {formatTime(attempt.timeSpentSeconds)}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {isCurrent && (
+                                                                                    <div className="mt-1 text-cyan-400 font-semibold">
+                                                                                        ✓ Joriy natija
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -330,6 +393,23 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                                                 <div className="flex items-center gap-2 text-slate-300">
                                                     <Clock size={16} className="text-slate-500" />
                                                     {formatTime(result.timeSpentSeconds)}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-slate-300">
+                                                    <div className="text-sm font-medium">
+                                                        {result.completedAt.toDate().toLocaleDateString('uz-UZ', {
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit'
+                                                        })}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500">
+                                                        {result.completedAt.toDate().toLocaleTimeString('uz-UZ', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

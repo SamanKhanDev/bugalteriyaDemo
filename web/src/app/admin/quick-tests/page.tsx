@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, getDocs, deleteDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { QuickTest } from '@/lib/schema';
 import { Plus, Trash2, Edit, Eye, BarChart3, Clock, Layers, Share2, Copy, Check } from 'lucide-react';
@@ -26,6 +26,50 @@ export default function QuickTestsPage() {
                 ...doc.data(),
                 testId: doc.id
             })) as QuickTest[];
+
+            // Check and auto-deactivate expired tests
+            const now = new Date();
+            const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const updates: Promise<void>[] = [];
+
+            testsData.forEach(test => {
+                if (!test.isActive) return; // Skip already inactive tests
+
+                let shouldDeactivate = false;
+
+                // Check if date has passed
+                if (test.activeDate && test.activeDate < currentDate) {
+                    shouldDeactivate = true;
+                }
+
+                // Check if time has passed (only if date is today)
+                if (test.activeDate === currentDate && test.activeTimeTo && currentTime > test.activeTimeTo) {
+                    shouldDeactivate = true;
+                }
+
+                // If no specific date but time has passed today
+                if (!test.activeDate && test.activeTimeTo && currentTime > test.activeTimeTo) {
+                    shouldDeactivate = true;
+                }
+
+                if (shouldDeactivate) {
+                    console.log(`⏰ Auto-deactivating expired test: ${test.title}`);
+                    test.isActive = false; // Update local state
+
+                    // Update in Firestore
+                    const updatePromise = updateDoc(doc(db, 'quickTests', test.testId), { isActive: false });
+                    updates.push(updatePromise);
+                }
+            });
+
+            // Wait for all updates to complete
+            if (updates.length > 0) {
+                await Promise.all(updates);
+                console.log(`✅ Deactivated ${updates.length} expired test(s)`);
+            }
+
             setTests(testsData);
         } catch (error) {
             console.error('Error loading tests:', error);
@@ -140,8 +184,8 @@ export default function QuickTestsPage() {
                                     <button
                                         onClick={() => copyShareLink(test.testId)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${copiedId === test.testId
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                : 'bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20'
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20'
                                             }`}
                                         title="Linkni nusxalash"
                                     >

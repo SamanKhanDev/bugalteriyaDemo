@@ -12,6 +12,7 @@ import { use } from 'react';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { GlobalTimer } from '@/components/common/GlobalTimer';
+import { QuestionNavigation } from '@/components/quick-tests/QuestionNavigation';
 
 interface Answer {
     questionId: string;
@@ -41,6 +42,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const [testStartTime, setTestStartTime] = useState<number>(0);
     const [startCountdown, setStartCountdown] = useState(3);
     const [isStarting, setIsStarting] = useState(true);
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
     // Load guest user
     useEffect(() => {
@@ -195,45 +197,84 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }
     }, [currentQuestion]);
 
+    // Sync selectedAnswer with existing answers when question changes
+    useEffect(() => {
+        if (currentQuestion) {
+            const existingAnswer = answers.find(a => a.questionId === currentQuestion.questionId);
+            setSelectedAnswer(existingAnswer ? existingAnswer.selectedOptionId : null);
+        }
+    }, [currentQuestion, answers]);
+
 
     const handleAnswer = (optionId: string) => {
-        if (!currentQuestion) return;
+        setSelectedAnswer(optionId);
+    };
 
-        const isCorrect = currentQuestion.options.find(o => o.optionId === optionId)?.isCorrect || false;
+    const handleNext = () => {
+        if (!currentQuestion || !selectedAnswer) return;
+
+        const isCorrect = currentQuestion.options.find(o => o.optionId === selectedAnswer)?.isCorrect || false;
 
         const newAnswer: Answer = {
             questionId: currentQuestion.questionId,
-            selectedOptionId: optionId,
+            selectedOptionId: selectedAnswer,
             isCorrect
         };
 
         const updatedAnswers = [...answers, newAnswer];
         setAnswers(updatedAnswers);
+        setSelectedAnswer(null); // Reset selection
 
-        setTimeout(() => {
-            if (currentQuestionIndex < currentLevel.questions.length - 1) {
-                setCurrentQuestionIndex(currentQuestionIndex + 1);
+        if (currentQuestionIndex < currentLevel.questions.length - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+        } else {
+            // Level finished
+            const now = Date.now();
+            const duration = Math.floor((now - lastLevelEndTime) / 1000);
+
+            // Update durations map
+            const newDurations = new Map(levelDurations);
+            newDurations.set(currentLevel.levelId, duration);
+            setLevelDurations(newDurations);
+            setLastLevelEndTime(now);
+
+            if (currentLevelIndex < levels.length - 1) {
+                // Move to next level
+                setCurrentLevelIndex(currentLevelIndex + 1);
+                setCurrentQuestionIndex(0);
             } else {
-                // Level finished
-                const now = Date.now();
-                const duration = Math.floor((now - lastLevelEndTime) / 1000);
-
-                // Update durations map
-                const newDurations = new Map(levelDurations);
-                newDurations.set(currentLevel.levelId, duration);
-                setLevelDurations(newDurations);
-                setLastLevelEndTime(now);
-
-                if (currentLevelIndex < levels.length - 1) {
-                    // Move to next level
-                    setCurrentLevelIndex(currentLevelIndex + 1);
-                    setCurrentQuestionIndex(0);
-                } else {
-                    // Test finished
-                    submitTest(newDurations, updatedAnswers);
-                }
+                // Test finished
+                submitTest(newDurations, updatedAnswers);
             }
-        }, 600);
+        }
+    };
+
+    const handleSkip = () => {
+        // Move to next question without answering
+        setSelectedAnswer(null); // Reset selection
+
+        if (currentQuestionIndex < currentLevel.questions.length - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+        } else {
+            // Level finished
+            const now = Date.now();
+            const duration = Math.floor((now - lastLevelEndTime) / 1000);
+
+            // Update durations map
+            const newDurations = new Map(levelDurations);
+            newDurations.set(currentLevel.levelId, duration);
+            setLevelDurations(newDurations);
+            setLastLevelEndTime(now);
+
+            if (currentLevelIndex < levels.length - 1) {
+                // Move to next level
+                setCurrentLevelIndex(currentLevelIndex + 1);
+                setCurrentQuestionIndex(0);
+            } else {
+                // Test finished
+                submitTest(newDurations, answers);
+            }
+        }
     };
 
     const submitTest = async (finalDurations: Map<string, number>, finalAnswers: Answer[]) => {
@@ -536,45 +577,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </div>
                         </div>
 
-                        <div className="space-y-6 text-left mb-8 relative z-10">
-                            <h3 className="text-xl font-bold text-white mb-4">Batafsil Natijalar</h3>
-                            {levels.map((level) => (
-                                <div key={level.levelId} className="space-y-4">
-                                    <h4 className="text-cyan-400 font-medium sticky top-20 bg-slate-900/95 backdrop-blur py-2 z-20 px-2 rounded-lg border border-slate-800/50">
-                                        {level.title}
-                                    </h4>
-                                    {level.questions.map((question, idx) => {
-                                        const answer = answers.find(a => a.questionId === question.questionId);
-                                        const selectedOption = question.options.find(o => o.optionId === answer?.selectedOptionId);
-                                        const correctOption = question.options.find(o => o.isCorrect);
-                                        const isCorrect = answer?.isCorrect;
-
-                                        return (
-                                            <div key={question.questionId} className={`p-4 rounded-xl border ${isCorrect
-                                                ? 'bg-green-500/10 border-green-500/20'
-                                                : 'bg-red-500/10 border-red-500/20'
-                                                }`}>
-                                                <p className="text-white font-medium mb-2">
-                                                    {idx + 1}. {question.questionText}
-                                                </p>
-                                                <div className="space-y-2 text-sm">
-                                                    <div className={`flex items-center gap-2 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                                                        <span>Sizning javobingiz: {selectedOption?.text || 'Belgilanmagan'}</span>
-                                                    </div>
-                                                    {!isCorrect && (
-                                                        <div className="flex items-center gap-2 text-green-400">
-                                                            <CheckCircle2 size={16} />
-                                                            <span>To'g'ri javob: {correctOption?.text}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
                             <button
@@ -658,48 +660,50 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                 </div>
             </div>
 
-            {/* Question Content */}
-            <div className="max-w-5xl mx-auto px-4 py-6">
-                <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-2xl overflow-hidden">
-                    {/* Level Badge */}
-                    <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-slate-800 px-6 py-3">
-                        <div className="flex items-center gap-2 text-cyan-400">
-                            <Layers size={18} />
-                            <span className="font-medium">{currentLevel.title}</span>
-                        </div>
-                    </div>
-
-                    {/* Question Section */}
-                    <div className="p-6 md:p-8">
-                        {/* Question Text */}
-                        <div className="mb-6">
-                            <div className="flex items-start gap-3 mb-4">
-                                <div className="flex-shrink-0 w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                                    <span className="text-cyan-400 font-bold">{currentQuestionIndex + 1}</span>
-                                </div>
-                                <h2 className="text-xl md:text-2xl font-semibold text-white leading-relaxed flex-1">
-                                    {currentQuestion.questionText}
-                                </h2>
+            {/* Main Content Area */}
+            <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6">
+                {/* Question Content */}
+                <div className="flex-1">
+                    <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-2xl overflow-hidden">
+                        {/* Level Badge */}
+                        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-slate-800 px-6 py-3">
+                            <div className="flex items-center gap-2 text-cyan-400">
+                                <Layers size={18} />
+                                <span className="font-medium">{currentLevel.title}</span>
                             </div>
                         </div>
 
-                        {/* Question Image */}
-                        {currentQuestion.imageUrl && (
+                        {/* Question Section */}
+                        <div className="p-6 md:p-8">
+                            {/* Question Text */}
                             <div className="mb-6">
-                                <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-4">
-                                    <img
-                                        src={currentQuestion.imageUrl}
-                                        alt="Savol rasmi"
-                                        className="w-full h-auto max-h-[400px] object-contain mx-auto"
-                                        onLoad={() => {
-                                            console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
-                                        }}
-                                        onError={(e) => {
-                                            console.error('❌ RASM YUKLANMADI:', currentQuestion.imageUrl);
-                                            console.error('Xatolik: Rasm topilmadi yoki ochiq emas');
-                                            const parent = e.currentTarget.parentElement;
-                                            if (parent) {
-                                                parent.innerHTML = `
+                                <div className="flex items-start gap-3 mb-4">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                                        <span className="text-cyan-400 font-bold">{currentQuestionIndex + 1}</span>
+                                    </div>
+                                    <h2 className="text-xl md:text-2xl font-semibold text-white leading-relaxed flex-1">
+                                        {currentQuestion.questionText}
+                                    </h2>
+                                </div>
+                            </div>
+
+                            {/* Question Image */}
+                            {currentQuestion.imageUrl && (
+                                <div className="mb-6">
+                                    <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-4">
+                                        <img
+                                            src={currentQuestion.imageUrl}
+                                            alt="Savol rasmi"
+                                            className="w-full h-auto max-h-[400px] object-contain mx-auto"
+                                            onLoad={() => {
+                                                console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
+                                            }}
+                                            onError={(e) => {
+                                                console.error('❌ RASM YUKLANMADI:', currentQuestion.imageUrl);
+                                                console.error('Xatolik: Rasm topilmadi yoki ochiq emas');
+                                                const parent = e.currentTarget.parentElement;
+                                                if (parent) {
+                                                    parent.innerHTML = `
                                                     <div class="text-center py-8 bg-red-500/10 rounded-lg border-2 border-red-500/30">
                                                         <div class="text-red-400 mb-3 text-lg font-bold">⚠️ Rasm Yuklanmadi</div>
                                                         <div class="text-xs text-slate-400 mb-2">URL:</div>
@@ -712,46 +716,87 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                                         </div>
                                                     </div>
                                                 `;
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Answer Options */}
-                        <div className="space-y-3">
-                            <p className="text-sm text-slate-400 mb-3 flex items-center gap-2">
-                                <Zap size={16} className="text-cyan-400" />
-                                Javobni tanlang:
-                            </p>
-                            {currentQuestion.options.map((option, idx) => (
-                                <button
-                                    key={option.optionId}
-                                    onClick={() => handleAnswer(option.optionId)}
-                                    className="group w-full text-left p-4 bg-slate-800/50 border-2 border-slate-700 rounded-xl hover:border-cyan-500 hover:bg-slate-800 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-slate-600 group-hover:border-cyan-500 flex items-center justify-center transition-colors">
-                                            <span className="text-xs text-slate-500 group-hover:text-cyan-400 font-medium">
-                                                {String.fromCharCode(65 + idx)}
-                                            </span>
-                                        </div>
-                                        <span className="text-base text-slate-200 group-hover:text-white transition-colors leading-relaxed">
-                                            {option.text}
-                                        </span>
+                                                }
+                                            }}
+                                        />
                                     </div>
-                                </button>
-                            ))}
+                                </div>
+                            )}
+
+                            {/* Answer Options */}
+                            <div className="space-y-3">
+                                <p className="text-sm text-slate-400 mb-3 flex items-center gap-2">
+                                    <Zap size={16} className="text-cyan-400" />
+                                    Javobni tanlang:
+                                </p>
+                                {currentQuestion.options.map((option, idx) => {
+                                    const isSelected = selectedAnswer === option.optionId;
+                                    return (
+                                        <button
+                                            key={option.optionId}
+                                            onClick={() => handleAnswer(option.optionId)}
+                                            className={`group w-full text-left p-4 border-2 rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSelected
+                                                ? 'bg-cyan-500/20 border-cyan-500 ring-2 ring-cyan-400'
+                                                : 'bg-slate-800/50 border-slate-700 hover:border-cyan-500 hover:bg-slate-800'
+                                                }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                                                    ? 'border-cyan-400 bg-cyan-500'
+                                                    : 'border-slate-600 group-hover:border-cyan-500'
+                                                    }`}>
+                                                    <span className={`text-xs font-medium ${isSelected
+                                                        ? 'text-white'
+                                                        : 'text-slate-500 group-hover:text-cyan-400'
+                                                        }`}>
+                                                        {String.fromCharCode(65 + idx)}
+                                                    </span>
+                                                </div>
+                                                <span className={`text-base transition-colors leading-relaxed ${isSelected
+                                                    ? 'text-white font-medium'
+                                                    : 'text-slate-200 group-hover:text-white'
+                                                    }`}>
+                                                    {option.text}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="mt-6 flex justify-center gap-4">
+                                {selectedAnswer ? (
+                                    <button
+                                        onClick={handleNext}
+                                        className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all font-medium"
+                                    >
+                                        Keyingi
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleSkip}
+                                        className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl hover:bg-slate-700 transition-all border border-slate-600 hover:border-slate-500"
+                                    >
+                                        O'tkazib yuborish
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-
-                    {/* Footer */}
-                    <div className="px-6 py-3 bg-slate-800/30 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
-                        <span>Savol {answeredQuestions + 1} / {totalQuestions}</span>
-                        <span>{currentLevel.questions.length} ta savol</span>
-                    </div>
                 </div>
+
+                {/* Question Navigation Panel */}
+                <QuestionNavigation
+                    levels={levels}
+                    answers={answers}
+                    currentLevelIndex={currentLevelIndex}
+                    currentQuestionIndex={currentQuestionIndex}
+                    onNavigate={(levelIdx, questionIdx) => {
+                        setCurrentLevelIndex(levelIdx);
+                        setCurrentQuestionIndex(questionIdx);
+                    }}
+                />
             </div>
         </div>
     );
