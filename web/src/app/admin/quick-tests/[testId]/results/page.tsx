@@ -86,6 +86,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                 let totalQuestions = 0;
                 let totalTime = 0;
                 const allAnswers: any[] = [];
+                let latestCompletedAt = null;
 
                 user.bestResults.forEach(r => {
                     totalScore += r.score;
@@ -93,6 +94,10 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                     totalTime += r.timeSpentSeconds;
                     if (r.answers) {
                         allAnswers.push(...r.answers);
+                    }
+                    // Track the latest completion time
+                    if (!latestCompletedAt || (r.completedAt && r.completedAt.toDate() > latestCompletedAt.toDate())) {
+                        latestCompletedAt = r.completedAt;
                     }
                 });
 
@@ -107,7 +112,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                     testId,
                     levelId: '',
                     answers: allAnswers,
-                    completedAt: { toDate: () => new Date() } as any
+                    completedAt: latestCompletedAt || { toDate: () => new Date() } as any
                 };
             });
         } else {
