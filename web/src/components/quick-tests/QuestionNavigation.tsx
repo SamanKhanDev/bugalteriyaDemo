@@ -43,7 +43,7 @@ export function QuestionNavigation({
                                 </div>
 
                                 <div className="grid grid-cols-5 gap-2">
-                                    {level.questions.map((question, qIdx) => {
+                                    {level.questions.map((question: any, qIdx: number) => {
                                         const globalQuestionIdx = levelStartIdx + qIdx;
                                         const isAnswered = answers.some(a => a.questionId === question.questionId);
                                         const isCurrent = currentLevelIndex === levelIdx && currentQuestionIndex === qIdx;
