@@ -134,7 +134,10 @@ export default function Home() {
             <span className="font-bold text-lg text-white">Bugalteriya.uz</span>
           </div>
           <div className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Barcha huquqlar himoyalangan.
+            &copy; {new Date().getFullYear()} Barcha huquqlar himoyalangan. 
+            <br>
+              <span>INSYSTEM.uz Tomonidan ishlab chiqilgan. </span>
+            </br>
           </div>
         </div>
       </footer>
