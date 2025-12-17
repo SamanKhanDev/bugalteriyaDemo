@@ -133,11 +133,29 @@ export default function Home() {
             </div>
             <span className="font-bold text-lg text-white">Bugalteriya.uz</span>
           </div>
-          <div className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Barcha huquqlar himoyalangan. 
-            <br>
-              <span>INSYSTEM.uz Tomonidan ishlab chiqilgan. </span>
-            </br>
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <span className="text-slate-500 text-sm">
+              &copy; {new Date().getFullYear()} Barcha huquqlar himoyalangan.
+            </span>
+
+            <a
+              href="https://insystem.uz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/40 border border-slate-800/50 hover:border-cyan-500/30 hover:bg-slate-900/80 transition-all duration-300 hover:shadow-[0_0_15px_-3px_rgba(6,182,212,0.15)]"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+
+              <span className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors duration-300">
+                <span className="font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:via-blue-300 group-hover:to-purple-300 transition-all duration-300">
+                  Insystem.uz
+                </span>
+                <span className="ml-1">IT digital group tomonidan ishlangan</span>
+              </span>
+            </a>
           </div>
         </div>
       </footer>
