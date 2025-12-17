@@ -34,6 +34,18 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
+    const findNextUnansweredIndex = (startIndex: number): number => {
+        // First check from next index to end
+        for (let i = startIndex + 1; i < questions.length; i++) {
+            if (!selectedOptions[questions[i].id]) return i;
+        }
+        // Then check from start to current index
+        for (let i = 0; i <= startIndex; i++) {
+            if (!selectedOptions[questions[i].id]) return i;
+        }
+        return -1;
+    };
+
     const handleOptionSelect = (optionId: string) => {
         setSelectedOptions(prev => ({
             ...prev,
@@ -42,10 +54,23 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
     };
 
     const handleNext = () => {
-        if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
+        const nextIndex = findNextUnansweredIndex(currentQuestionIndex);
+        if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
         } else {
             handleSubmit();
+        }
+    };
+
+    const handleSkip = () => {
+        const nextIndex = findNextUnansweredIndex(currentQuestionIndex);
+        if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
+        } else {
+            if (nextIndex === currentQuestionIndex) {
+                // Only one question left and user wants to skip. Stay here.
+                alert("Siz boshqa barcha savollarga javob berdingiz.");
+            }
         }
     };
 
@@ -221,6 +246,7 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                 passed={result.passed}
                 onRetry={() => {
                     setResult(null);
+                    setResult(null);
                     setCurrentQuestionIndex(0);
                     setSelectedOptions({});
                 }}
@@ -302,13 +328,23 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                 </div>
 
                 <div className="mt-8 flex justify-end">
+                    {/* O'tkazib yuborish tugmasi */}
+                    {!selectedOptions[currentQuestion.id] && !isSubmitting && (
+                        <button
+                            onClick={handleSkip}
+                            className="mr-auto px-6 py-4 text-slate-400 hover:text-white font-medium transition-colors"
+                        >
+                            O'tkazib yuborish
+                        </button>
+                    )}
+
                     <button
                         onClick={handleNext}
                         disabled={!selectedOptions[currentQuestion.id] || isSubmitting}
                         className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-cyan-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                         {isSubmitting ? 'Yuklanmoqda...' : (
-                            currentQuestionIndex === questions.length - 1 ? 'Yakunlash' : 'Keyingi'
+                            questions.length - Object.keys(selectedOptions).length <= 1 ? 'Yakunlash' : 'Keyingi'
                         )}
                         {!isSubmitting && <ChevronRight size={24} />}
                     </button>

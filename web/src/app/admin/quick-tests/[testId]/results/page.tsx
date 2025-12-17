@@ -86,7 +86,8 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                 let totalQuestions = 0;
                 let totalTime = 0;
                 const allAnswers: any[] = [];
-                let latestCompletedAt = null;
+                let latestCompletedAt: any = null;
+                let earliestStartedAt: any = null;
 
                 user.bestResults.forEach(r => {
                     totalScore += r.score;
@@ -98,6 +99,10 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                     // Track the latest completion time
                     if (!latestCompletedAt || (r.completedAt && r.completedAt.toDate() > latestCompletedAt.toDate())) {
                         latestCompletedAt = r.completedAt;
+                    }
+                    // Track the earliest start time
+                    if (r.startedAt && (!earliestStartedAt || r.startedAt.toDate() < earliestStartedAt.toDate())) {
+                        earliestStartedAt = r.startedAt;
                     }
                 });
 
@@ -112,6 +117,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                     testId,
                     levelId: '',
                     answers: allAnswers,
+                    startedAt: earliestStartedAt,
                     completedAt: latestCompletedAt || { toDate: () => new Date() } as any
                 };
             });
@@ -402,18 +408,39 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-slate-300">
+                                                    {result.startedAt ? (
+                                                        <>
+                                                            <div className="text-xs text-slate-500 mb-1">Boshlangan:</div>
+                                                            <div className="text-sm font-medium mb-2">
+                                                                {result.startedAt.toDate().toLocaleDateString('uz-UZ', {
+                                                                    year: 'numeric',
+                                                                    month: '2-digit',
+                                                                    day: '2-digit'
+                                                                })}
+                                                                {' '}
+                                                                <span className="text-xs text-slate-500">
+                                                                    {result.startedAt.toDate().toLocaleTimeString('uz-UZ', {
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    })}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    ) : null}
+                                                    <div className="text-xs text-slate-500 mb-1">Tugagan:</div>
                                                     <div className="text-sm font-medium">
                                                         {result.completedAt.toDate().toLocaleDateString('uz-UZ', {
                                                             year: 'numeric',
                                                             month: '2-digit',
                                                             day: '2-digit'
                                                         })}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500">
-                                                        {result.completedAt.toDate().toLocaleTimeString('uz-UZ', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
+                                                        {' '}
+                                                        <span className="text-xs text-slate-500">
+                                                            {result.completedAt.toDate().toLocaleTimeString('uz-UZ', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </td>

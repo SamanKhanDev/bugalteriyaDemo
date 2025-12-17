@@ -60,14 +60,15 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         loadTest();
     }, [testId]);
 
-    // Initialize timer when levels are loaded and countdown is finished
+    // Initialize timer when countdown finishes (test actually starts)
     useEffect(() => {
-        if (levels.length > 0 && !isStarting) {
+        if (levels.length > 0 && !isStarting && testStartTime === 0) {
             const now = Date.now();
             setLastLevelEndTime(now);
             setTestStartTime(now);
+            console.log('✅ Test boshlandi:', new Date(now).toLocaleString('uz-UZ'));
         }
-    }, [levels, isStarting]);
+    }, [levels, isStarting, testStartTime]);
 
     // Timer interval for UI
     useEffect(() => {
@@ -210,6 +211,20 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         setSelectedAnswer(optionId);
     };
 
+    const findNextUnansweredIndex = (startIndex: number, questions: any[], currentAnswers: Answer[]): number => {
+        // First check from next index to end
+        for (let i = startIndex + 1; i < questions.length; i++) {
+            const isAnswered = currentAnswers.some(a => a.questionId === questions[i].questionId);
+            if (!isAnswered) return i;
+        }
+        // Then check from start to current index (loop)
+        for (let i = 0; i <= startIndex; i++) {
+            const isAnswered = currentAnswers.some(a => a.questionId === questions[i].questionId);
+            if (!isAnswered) return i;
+        }
+        return -1; // All answered
+    };
+
     const handleNext = () => {
         if (!currentQuestion || !selectedAnswer) return;
 
@@ -221,14 +236,17 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             isCorrect
         };
 
-        const updatedAnswers = [...answers, newAnswer];
+        const updatedAnswers = [...answers.filter(a => a.questionId !== currentQuestion.questionId), newAnswer];
         setAnswers(updatedAnswers);
         setSelectedAnswer(null); // Reset selection
 
-        if (currentQuestionIndex < currentLevel.questions.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
+        // Find next question
+        const nextIndex = findNextUnansweredIndex(currentQuestionIndex, currentLevel.questions, updatedAnswers);
+
+        if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
         } else {
-            // Level finished
+            // Level finished - all answered
             const now = Date.now();
             const duration = Math.floor((now - lastLevelEndTime) / 1000);
 
@@ -250,29 +268,34 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     };
 
     const handleSkip = () => {
-        // Move to next question without answering
         setSelectedAnswer(null); // Reset selection
 
-        if (currentQuestionIndex < currentLevel.questions.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
+        // Find next question without marking current as answered
+        const nextIndex = findNextUnansweredIndex(currentQuestionIndex, currentLevel.questions, answers);
+
+        if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
         } else {
-            // Level finished
-            const now = Date.now();
-            const duration = Math.floor((now - lastLevelEndTime) / 1000);
+            // Only current question remains unanswered?
+            // If skip acts as "stay" when only 1 left, or maybe force answer?
+            // If user skips the ONLY remaining question, just stay on it?
+            // Or if they skipped everything, we should probably just loop.
+            // But findNextUnansweredIndex handles looping. 
+            // If it returns -1, it means EVERYTHING is answered (but here we are skipping, so current is NOT answered).
+            // So logic needs to be careful: current question IS unanswered.
 
-            // Update durations map
-            const newDurations = new Map(levelDurations);
-            newDurations.set(currentLevel.levelId, duration);
-            setLevelDurations(newDurations);
-            setLastLevelEndTime(now);
+            // Re-find next OTHER than current?
+            // Actually findNextUnansweredIndex will return current index if it's the only one left.
+            // Let's verify loop logic:
+            // if startIndex=0, questions=[Q1], isAnswered=false.
+            // Loop 1 (1 to 1): Empty.
+            // Loop 2 (0 to 0): checks Q1. Not answered. Return 0.
+            // So if nextIndex === currentQuestionIndex, it means only this question is left.
+            // We can just alert user or do nothing.
 
-            if (currentLevelIndex < levels.length - 1) {
-                // Move to next level
-                setCurrentLevelIndex(currentLevelIndex + 1);
-                setCurrentQuestionIndex(0);
-            } else {
-                // Test finished
-                submitTest(newDurations, answers);
+            if (nextIndex === currentQuestionIndex) {
+                // Only this question left
+                alert("Siz bu bosqichdagi barcha boshqa savollarga javob berdingiz. Ushbu savolga javob bering.");
             }
         }
     };

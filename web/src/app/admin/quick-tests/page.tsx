@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { QuickTest } from '@/lib/schema';
-import { Plus, Trash2, Edit, Eye, BarChart3, Clock, Layers, Share2, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, Edit, Eye, BarChart3, Clock, Layers, Share2, Copy, Check, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,12 +12,14 @@ export default function QuickTestsPage() {
     const [tests, setTests] = useState<QuickTest[]>([]);
     const [loading, setLoading] = useState(true);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const router = useRouter();
 
     useEffect(() => {
         loadTests();
     }, []);
 
+    // ... existing loadTests logic ...
     const loadTests = async () => {
         try {
             const q = query(collection(db, 'quickTests'), orderBy('createdAt', 'desc'));
@@ -102,6 +104,11 @@ export default function QuickTestsPage() {
         router.push(`/admin/quick-tests/${test.testId}/edit`);
     };
 
+    const filteredTests = tests.filter(test =>
+        test.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        test.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -112,18 +119,30 @@ export default function QuickTestsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Tezkor Imtihonlar</h1>
                     <p className="text-slate-400">Foydalanuvchilar uchun tezkor imtihonlarni boshqaring</p>
                 </div>
                 <Link
                     href="/admin/quick-tests/create"
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all"
                 >
                     <Plus size={20} />
                     Yangi Imtihon
                 </Link>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Imtihonlarni qidirish..."
+                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                />
             </div>
 
             {tests.length === 0 ? (
@@ -141,9 +160,13 @@ export default function QuickTestsPage() {
                         Imtihon Yaratish
                     </Link>
                 </div>
+            ) : filteredTests.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                    Qidiruv bo'yicha hech narsa topilmadi
+                </div>
             ) : (
                 <div className="grid gap-4">
-                    {tests.map((test) => (
+                    {filteredTests.map((test) => (
                         <div
                             key={test.testId}
                             className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-all"
