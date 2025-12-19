@@ -12,11 +12,23 @@ import { generateUniqueId } from '@/lib/generateUniqueId';
 import ActivityTracker from '@/components/layout/ActivityTracker';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { setUser, setLoadingAuth, user, isLoadingAuth } = useStore();
+    const { setUser, setGuestUser, setLoadingAuth, user, isLoadingAuth } = useStore();
     const router = useRouter();
     const pathname = usePathname();
 
     const unsubscribeProfileRef = useRef<(() => void) | null>(null);
+
+    // Initialize Guest User from localStorage
+    useEffect(() => {
+        const storedGuest = localStorage.getItem('guestUser');
+        if (storedGuest) {
+            try {
+                setGuestUser(JSON.parse(storedGuest));
+            } catch (e) {
+                console.error('Error parsing guest user from storage:', e);
+            }
+        }
+    }, [setGuestUser]);
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {

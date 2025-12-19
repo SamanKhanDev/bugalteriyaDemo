@@ -13,6 +13,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { GlobalTimer } from '@/components/common/GlobalTimer';
 import { QuestionNavigation } from '@/components/quick-tests/QuestionNavigation';
+import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
 
 interface Answer {
     questionId: string;
@@ -22,13 +23,19 @@ interface Answer {
 
 export default function QuickTestRunnerPage({ params }: { params: Promise<{ testId: string }> }) {
     const { testId } = use(params);
-    const { user } = useStore();
+    const { user, guestUser, setCurrentTest } = useStore();
     const router = useRouter();
 
-    const [guestUser, setGuestUser] = useState<any>(null);
     const activeUser = user || guestUser;
 
     const [test, setTest] = useState<QuickTest | null>(null);
+
+    useEffect(() => {
+        if (test) {
+            setCurrentTest({ id: testId, title: test.title });
+        }
+        return () => setCurrentTest(null);
+    }, [test, testId, setCurrentTest]);
     const [levels, setLevels] = useState<QuickTestLevel[]>([]);
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -44,17 +51,15 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const [isStarting, setIsStarting] = useState(true);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
-    // Load guest user
-    useEffect(() => {
-        const storedGuest = localStorage.getItem('guestUser');
-        if (storedGuest) {
-            try {
-                setGuestUser(JSON.parse(storedGuest));
-            } catch (e) {
-                console.error('Error parsing guest user:', e);
-            }
-        }
-    }, []);
+    // Screenshot Protection - Maximum security with logging
+    const BlurOverlay = useScreenshotProtection({
+        enabled: !showResults,
+        userId: activeUser?.userId,
+        userName: activeUser?.name,
+        testId,
+        testTitle: test?.title
+    });
+
 
     useEffect(() => {
         loadTest();
@@ -547,7 +552,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 {percentage.toFixed(0)}%
                             </div>
                             <p className="text-slate-400">
-                                {score} ta to'g'ri javob {totalQuestions} ta savoldan
+                                {score} ta to&apos;g&apos;ri javob {totalQuestions} ta savoldan
                             </p>
                         </div>
 
@@ -575,14 +580,14 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                     <CheckCircle2 className="text-green-400" size={20} />
                                     <span className="text-2xl font-bold text-white">{score}</span>
                                 </div>
-                                <p className="text-sm text-slate-400">To'g'ri</p>
+                                <p className="text-sm text-slate-400">To&apos;g&apos;ri</p>
                             </div>
                             <div className="bg-slate-800/50 rounded-2xl p-4">
                                 <div className="flex items-center justify-center gap-2 mb-2">
                                     <XCircle className="text-red-400" size={20} />
                                     <span className="text-2xl font-bold text-white">{totalQuestions - score}</span>
                                 </div>
-                                <p className="text-sm text-slate-400">Noto'g'ri</p>
+                                <p className="text-sm text-slate-400">Noto&apos;g&apos;ri</p>
                             </div>
                             <div className="bg-slate-800/50 rounded-2xl p-4">
                                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -613,7 +618,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all"
                             >
                                 <Trophy size={20} />
-                                Reytingni Ko'rish
+                                Reytingni Ko&apos;rish
                             </button>
                         </div>
                     </div>
@@ -801,7 +806,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                         onClick={handleSkip}
                                         className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl hover:bg-slate-700 transition-all border border-slate-600 hover:border-slate-500"
                                     >
-                                        O'tkazib yuborish
+                                        O&apos;tkazib yuborish
                                     </button>
                                 )}
                             </div>
@@ -821,6 +826,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                     }}
                 />
             </div>
+
+            {/* Screenshot Protection */}
+            {BlurOverlay}
         </div>
     );
 }

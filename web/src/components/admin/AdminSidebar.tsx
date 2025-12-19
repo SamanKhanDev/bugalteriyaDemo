@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LayoutDashboard, Users, FileText, BarChart3, Trophy, LogOut, Award, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, Users, FileText, BarChart3, Trophy, LogOut, Award, Zap, Shield } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +14,7 @@ const navItems = [
     { name: 'Sertifikatlar', href: '/admin/certificates', icon: Award },
     { name: 'Reyting', href: '/admin/leaderboard', icon: Trophy },
     { name: 'Analitika', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Screenshot Logs', href: '/admin/screenshot-logs', icon: Shield },
 ];
 
 interface AdminSidebarProps {

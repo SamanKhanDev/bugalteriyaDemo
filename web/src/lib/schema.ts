@@ -11,6 +11,7 @@ export interface User {
     totalActiveSeconds: number;
     lastSeen: Timestamp;
     profilePhotoUrl?: string;
+    isGuest?: boolean;
 }
 
 export interface UserTimer {

@@ -9,6 +9,8 @@ import { User, Mail, Lock, LogIn, UserPlus, Zap, AlertCircle } from 'lucide-reac
 import { use } from 'react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { generateUniqueId } from '@/lib/generateUniqueId';
+import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
+import { useStore } from '@/store/useStore';
 
 
 type AuthMode = 'guest' | 'register' | 'login';
@@ -16,8 +18,16 @@ type AuthMode = 'guest' | 'register' | 'login';
 export default function PublicQuickTestPage({ params }: { params: Promise<{ testId: string }> }) {
     const { testId } = use(params);
     const router = useRouter();
+    const { setGuestUser, setCurrentTest } = useStore();
     const [test, setTest] = useState<QuickTest | null>(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (test) {
+            setCurrentTest({ id: testId, title: test.title });
+        }
+        return () => setCurrentTest(null);
+    }, [test, testId, setCurrentTest]);
     const [authLoading, setAuthLoading] = useState(true);
     const [authMode, setAuthMode] = useState<AuthMode | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -33,6 +43,17 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
     // Login mode
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+
+    // Screenshot Protection - Maximum security with logging
+    const activeName = guestName || regName || (authMode === 'login' ? loginEmail : 'Tashrif Buyuruvchi');
+
+    const BlurOverlay = useScreenshotProtection({
+        enabled: true,
+        userId: 'public-visitor',
+        userName: activeName,
+        testId,
+        testTitle: test?.title || 'Test Yuklanmoqda...'
+    });
 
     useEffect(() => {
         // Check if user is already logged in
@@ -90,6 +111,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
         };
 
         localStorage.setItem('guestUser', JSON.stringify(guestUser));
+        setGuestUser(guestUser);
         router.push(`/quick-tests/${testId}`);
     };
 
@@ -186,7 +208,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                         <AlertCircle className="text-yellow-500 flex-shrink-0" size={24} />
                         <div className="flex-1 overflow-hidden">
                             <p className="text-yellow-200/90 text-sm md:text-base leading-relaxed animate-marquee whitespace-nowrap">
-                                Imtihonga kirish uchun va undan to'lov qilib to'liq foydalanishiz uchun to'liq ro'yxatdan o'tishiz talab qilinadi.
+                                Imtihonga kirish uchun va undan to&apos;lov qilib to&apos;liq foydalanishiz uchun to&apos;liq ro&apos;yxatdan o&apos;tishiz talab qilinadi.
                             </p>
                         </div>
                     </div>
@@ -233,9 +255,9 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                                 <div className="absolute inset-0 bg-purple-500/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                                 <UserPlus className="text-purple-400 relative z-10" size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Ro'yxatdan O'tish</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Ro&apos;yxatdan O&apos;tish</h3>
                             <p className="text-slate-400 text-sm">
-                                To'liq ro'yxatdan o'tish va platformaga kirish
+                                To&apos;liq ro&apos;yxatdan o&apos;tish va platformaga kirish
                             </p>
                         </button>
 
@@ -363,7 +385,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                                 {submitting ? 'Yuklanmoqda...' : 'Ro\'yxatdan O\'tish'}
                             </button>
                             <p className="text-xs text-slate-400 text-center">
-                                Platformaga to'liq kirish huquqi beriladi
+                                Platformaga to&apos;liq kirish huquqi beriladi
                             </p>
                         </div>
                     )}
@@ -412,6 +434,9 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                     )}
                 </div>
             </div>
+
+            {/* Screenshot Protection */}
+            {BlurOverlay}
         </div>
     );
 }
