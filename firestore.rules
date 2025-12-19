@@ -154,5 +154,13 @@ service cloud.firestore {
       // Admins have full access
       allow write: if isAdmin();
     }
+
+    // Screenshot Search (Attempt logs)
+    match /screenshotAttempts/{attemptId} {
+      // Allow anyone to log a violation
+      allow create: if true;
+      // Only admins can read logs
+      allow read: if isAdmin();
+    }
   }
 }

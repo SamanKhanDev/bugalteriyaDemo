@@ -116,9 +116,16 @@ export default function ContentProtection() {
     }, []);
 
     useEffect(() => {
-        // Disable protection for admins or on admin pages
+        // Disable protection for:
+        // 1. Admins
+        // 2. Admin pages
+        // 3. Landing page
+        // 4. Auth pages
         const isAdminPage = pathname?.startsWith('/admin');
-        if (user?.role === 'admin' || isAdminPage) return;
+        const isAuthPage = pathname?.startsWith('/auth');
+        const isLandingPage = pathname === '/';
+
+        if (user?.role === 'admin' || isAdminPage || isAuthPage || isLandingPage) return;
 
         const handleContextMenu = (e: MouseEvent) => {
             e.preventDefault();
@@ -267,7 +274,10 @@ export default function ContentProtection() {
     }, [triggerBlackout, showWarningMessage, logViolation, pathname, user?.role]);
 
     const isAdminPage = pathname?.startsWith('/admin');
-    if (user?.role === 'admin' || isAdminPage) return null;
+    const isAuthPage = pathname?.startsWith('/auth');
+    const isLandingPage = pathname === '/';
+
+    if (user?.role === 'admin' || isAdminPage || isAuthPage || isLandingPage) return null;
 
     return (
         <>
