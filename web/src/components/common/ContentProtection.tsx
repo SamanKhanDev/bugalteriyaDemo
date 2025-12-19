@@ -45,12 +45,37 @@ export default function ContentProtection() {
 
     const logViolation = useCallback(async (type: string) => {
         try {
+            // HIGH PRIORITY IDENTITY CHECK
+            let id = 'anonymous';
+            let name = 'Anonymous User';
+
+            // 1. Check Store
+            if (user?.userId) {
+                id = user.userId;
+                name = user.name;
+            } else if (guestUser?.userId) {
+                id = guestUser.userId;
+                name = guestUser.name;
+            }
+
+            // 2. Check LocalStorage (Last ditch effort)
+            if (id === 'anonymous' && typeof window !== 'undefined') {
+                try {
+                    const stored = localStorage.getItem('guestUser');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (parsed.userId) id = parsed.userId;
+                        if (parsed.name) name = parsed.name;
+                    }
+                } catch (e) { }
+            }
+
             await addDoc(collection(db, 'screenshotAttempts'), {
-                userId: userRef.current.id,
-                userName: userRef.current.name,
+                userId: id,
+                userName: name,
                 testId: currentTest?.id || 'global_protection',
                 testTitle: currentTest?.title || 'Global Site Protection',
-                attemptType: type,
+                attemptType: type || 'PrintScreen',
                 timestamp: Timestamp.now(),
                 userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
                 screenResolution: typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : 'unknown'
@@ -58,7 +83,7 @@ export default function ContentProtection() {
         } catch (error) {
             console.error('Error logging screenshot attempt:', error);
         }
-    }, [currentTest]);
+    }, [user, guestUser, currentTest]);
 
     const triggerBlackout = useCallback(() => {
         setIsBlackout(true);
@@ -112,22 +137,7 @@ export default function ContentProtection() {
                 ctrl: isCtrl
             };
 
-            // Prevent PrintScreen (PrtSc)
-            if (e.key === "PrintScreen" || e.keyCode === 44 || e.key === "Snapshot") {
-                if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                    navigator.clipboard.writeText("").catch(() => { });
-                }
-                triggerBlackout();
-                showWarningMessage("Skrinshot qilish taqiqlangan!");
-                logViolation('PrintScreen');
-                return;
-            }
-
-            // Prevent common screenshot/copy shortcuts
-            const forbiddenKeys = ["c", "x", "s", "p", "u", "a"];
-            const isForbiddenKey = forbiddenKeys.includes(e.key.toLowerCase());
-
-            // 2. Windows/Mac Screenshot Shortcuts (Win+Shift+S / Cmd+Shift+S)
+            // 1. Windows/Mac Screenshot Shortcuts (Win+Shift+S / Cmd+Shift+S) - CHECK FIRST
             const isSKey = e.key.toLowerCase() === 's';
             const isMacScreenshot = e.metaKey && e.shiftKey && (e.key === '4' || e.key === '3' || isSKey);
             const isWinScreenshot = (e.metaKey && e.shiftKey && isSKey) || (e.ctrlKey && e.shiftKey && isSKey);
@@ -137,22 +147,37 @@ export default function ContentProtection() {
                     navigator.clipboard.writeText("").catch(() => { });
                 }
                 triggerBlackout();
-                logViolation('PrintScreen');
+                logViolation(isWinScreenshot ? 'Windows Snipping Tool (Win+Shift+S)' : 'Mac Screenshot Shortcut');
                 showWarningMessage("Skrinshot qilish taqiqlangan!");
                 e.preventDefault();
                 e.stopPropagation();
                 return;
             }
 
-            // 3. Functional Keys (F11, F12)
+            // 2. Functional Keys (F11, F12)
             if (e.key === "F11" || e.key === "F12") {
                 e.preventDefault();
                 e.stopPropagation();
                 triggerBlackout();
-                logViolation(e.key === "F11" ? 'PrintScreen' : 'DevTools Attempt (F12)');
+                logViolation(e.key === "F11" ? 'Fullscreen (F11)' : 'DevTools (F12)');
                 showWarningMessage("Bu amal taqiqlangan!");
                 return;
             }
+
+            // 3. Prevent PrintScreen (PrtSc) - CHECK AFTER SHORTCUTS
+            if (e.key === "PrintScreen" || e.keyCode === 44 || e.key === "Snapshot") {
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText("").catch(() => { });
+                }
+                triggerBlackout();
+                showWarningMessage("Skrinshot qilish taqiqlangan!");
+                logViolation('Standard PrintScreen Button');
+                return;
+            }
+
+            // 4. Other forbidden combinations (C, S, U, etc.)
+            const forbiddenKeys = ["c", "x", "s", "p", "u", "a"];
+            const isForbiddenKey = forbiddenKeys.includes(e.key.toLowerCase());
 
             if (
                 (e.ctrlKey && isForbiddenKey && !e.altKey && !e.shiftKey) ||
@@ -167,14 +192,14 @@ export default function ContentProtection() {
 
         const handleKeyUp = (e: KeyboardEvent) => {
             modifiersRef.current = {
-                meta: e.metaKey,
-                shift: e.shiftKey,
-                ctrl: e.ctrlKey
+                meta: e.metaKey || e.key === 'Meta' || e.key === 'OS' || e.key === 'Win',
+                shift: e.shiftKey || e.key === 'Shift',
+                ctrl: e.ctrlKey || e.key === 'Control'
             };
 
             if (e.key === "PrintScreen" || e.keyCode === 44) {
                 triggerBlackout();
-                logViolation('PrintScreen'); // KeyUp version
+                logViolation('System Snip (PrintScreen Release)');
             }
         };
 
@@ -186,10 +211,10 @@ export default function ContentProtection() {
         const handleBlur = () => {
             setIsWarningActive(true);
 
-            // Very aggressive detection: If window blurs while Meta (Win/Cmd) is held,
-            // or if both Meta and Shift were active, it's almost certainly a screenshot tool.
-            if (modifiersRef.current.meta || (modifiersRef.current.meta && modifiersRef.current.shift)) {
-                logViolation('PrintScreen');
+            // AGGRESSIVE SYSTEM SNIP DETECTION:
+            // If window blurs while Shift or Meta (Win) key is active, log it.
+            if (modifiersRef.current.shift || modifiersRef.current.meta) {
+                logViolation('System Snip (Blur Detected)');
             }
         };
         const handleFocus = () => setIsWarningActive(false);

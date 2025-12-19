@@ -101,16 +101,13 @@ export default function ScreenshotLogsPage() {
             if (filter === 'all') return true;
 
             const attemptDate = attempt.timestamp?.toDate ? attempt.timestamp.toDate() : new Date();
-
             if (filter === 'today') {
                 return attemptDate.toDateString() === now.toDateString();
             }
-
             if (filter === 'week') {
                 const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 return attemptDate >= weekAgo;
             }
-
             return true;
         });
     };
