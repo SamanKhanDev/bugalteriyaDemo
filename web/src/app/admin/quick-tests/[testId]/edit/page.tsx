@@ -20,6 +20,9 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
     const [certificateThreshold, setCertificateThreshold] = useState<number | undefined>(undefined);
     const [isActive, setIsActive] = useState(true);
     const [activeDate, setActiveDate] = useState<string>('');
+    const [activeStartDate, setActiveStartDate] = useState<string>('');
+    const [activeEndDate, setActiveEndDate] = useState<string>('');
+    const [dateMode, setDateMode] = useState<'single' | 'range'>('single');
     const [activeTimeFrom, setActiveTimeFrom] = useState<string>('');
     const [activeTimeTo, setActiveTimeTo] = useState<string>('');
     const [levels, setLevels] = useState<QuickTestLevel[]>([]);
@@ -40,6 +43,9 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                 setCertificateThreshold(testData.certificateThreshold);
                 setIsActive(testData.isActive);
                 setActiveDate(testData.activeDate || '');
+                setActiveStartDate(testData.activeStartDate || '');
+                setActiveEndDate(testData.activeEndDate || '');
+                setDateMode((testData.activeStartDate || testData.activeEndDate) ? 'range' : 'single');
                 setActiveTimeFrom(testData.activeTimeFrom || '');
                 setActiveTimeTo(testData.activeTimeTo || '');
             }
@@ -222,10 +228,18 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
             }
 
             // Add date and time range
-            if (activeDate) {
+            if (dateMode === 'single' && activeDate) {
                 updateData.activeDate = activeDate;
+                updateData.activeStartDate = null;
+                updateData.activeEndDate = null;
+            } else if (dateMode === 'range') {
+                updateData.activeDate = null;
+                updateData.activeStartDate = activeStartDate || null;
+                updateData.activeEndDate = activeEndDate || null;
             } else {
                 updateData.activeDate = null;
+                updateData.activeStartDate = null;
+                updateData.activeEndDate = null;
             }
 
             if (activeTimeFrom) {
@@ -354,46 +368,95 @@ export default function EditQuickTestPage({ params }: { params: Promise<{ testId
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Sana (ixtiyoriy)
-                            </label>
-                            <input
-                                type="date"
-                                value={activeDate}
-                                onChange={(e) => setActiveDate(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Agar sana belgilanmasa, har kuni ishlaydi</p>
+                    <div className="space-y-4 pt-4 border-t border-slate-800">
+                        <div className="flex gap-4 p-1 bg-slate-800 rounded-lg w-fit">
+                            <button
+                                type="button"
+                                onClick={() => setDateMode('single')}
+                                className={`px-4 py-1.5 rounded-md text-sm transition-all ${dateMode === 'single' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Bir kunlik
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDateMode('range')}
+                                className={`px-4 py-1.5 rounded-md text-sm transition-all ${dateMode === 'range' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Kunlar oralig'i
+                            </button>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Boshlanish vaqti
-                            </label>
-                            <input
-                                type="time"
-                                value={activeTimeFrom}
-                                onChange={(e) => setActiveTimeFrom(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Masalan: 11:00</p>
-                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {dateMode === 'single' ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Sana
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={activeDate}
+                                        onChange={(e) => setActiveDate(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Boshlanish sanasi
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={activeStartDate}
+                                            onChange={(e) => setActiveStartDate(e.target.value)}
+                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                        />
+                                    </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Tugash vaqti
-                            </label>
-                            <input
-                                type="time"
-                                value={activeTimeTo}
-                                onChange={(e) => setActiveTimeTo(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Masalan: 15:00</p>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Tugash sanasi
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={activeEndDate}
+                                            onChange={(e) => setActiveEndDate(e.target.value)}
+                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Boshlanish vaqti
+                                </label>
+                                <input
+                                    type="time"
+                                    value={activeTimeFrom}
+                                    onChange={(e) => setActiveTimeFrom(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Tugash vaqti
+                                </label>
+                                <input
+                                    type="time"
+                                    value={activeTimeTo}
+                                    onChange={(e) => setActiveTimeTo(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                />
+                            </div>
                         </div>
                     </div>
+                    {(activeStartDate || activeEndDate || activeDate || activeTimeFrom || activeTimeTo) && (
+                        <p className="text-xs text-slate-500">
+                            💡 Test faqat belgilangan {dateMode === 'single' ? 'kunda' : 'kunlar oralig\'ida'} va vaqtda faol bo'ladi.
+                        </p>
+                    )}
                 </div>
             </div>
 

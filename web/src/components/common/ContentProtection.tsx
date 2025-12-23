@@ -226,6 +226,12 @@ export default function ContentProtection() {
         };
         const handleFocus = () => setIsWarningActive(false);
 
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                setIsWarningActive(true);
+            }
+        };
+
         document.addEventListener("contextmenu", handleContextMenu);
         document.addEventListener("keydown", handleKeyDown);
         document.addEventListener("keyup", handleKeyUp);
@@ -234,6 +240,7 @@ export default function ContentProtection() {
         document.addEventListener("dragstart", (e) => e.preventDefault());
         window.addEventListener("blur", handleBlur);
         window.addEventListener("focus", handleFocus);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
         // CSS for protection
         const style = document.createElement("style");
@@ -268,6 +275,7 @@ export default function ContentProtection() {
             document.removeEventListener("cut", handleCopy);
             window.removeEventListener("blur", handleBlur);
             window.removeEventListener("focus", handleFocus);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
             const injectedStyle = document.getElementById("content-protection-styles");
             if (injectedStyle) injectedStyle.remove();
         };

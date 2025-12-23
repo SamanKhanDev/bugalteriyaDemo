@@ -22,6 +22,12 @@ export default function CreateQuickTestPage() {
     const [timeLimit, setTimeLimit] = useState<number | undefined>(undefined);
     const [certificateThreshold, setCertificateThreshold] = useState<number | undefined>(undefined);
     const [isActive, setIsActive] = useState(true);
+    const [activeStartDate, setActiveStartDate] = useState<string>('');
+    const [activeEndDate, setActiveEndDate] = useState<string>('');
+    const [activeDate, setActiveDate] = useState<string>('');
+    const [dateMode, setDateMode] = useState<'single' | 'range'>('single');
+    const [activeTimeFrom, setActiveTimeFrom] = useState<string>('');
+    const [activeTimeTo, setActiveTimeTo] = useState<string>('');
 
     // Manual mode
     const [levels, setLevels] = useState<QuickTestLevel[]>([
@@ -267,6 +273,32 @@ export default function CreateQuickTestPage() {
                 testData.certificateThreshold = certificateThreshold;
             }
 
+            if (activeStartDate) {
+                testData.activeStartDate = activeStartDate;
+            }
+
+            if (activeEndDate) {
+                testData.activeEndDate = activeEndDate;
+            }
+
+            if (activeTimeFrom) {
+                testData.activeTimeFrom = activeTimeFrom;
+            }
+
+            if (activeTimeTo) {
+                testData.activeTimeTo = activeTimeTo;
+            }
+
+            if (dateMode === 'single' && activeDate) {
+                testData.activeDate = activeDate;
+                testData.activeStartDate = null;
+                testData.activeEndDate = null;
+            } else if (dateMode === 'range') {
+                testData.activeDate = null;
+                if (activeStartDate) testData.activeStartDate = activeStartDate;
+                if (activeEndDate) testData.activeEndDate = activeEndDate;
+            }
+
             const testRef = await addDoc(collection(db, 'quickTests'), testData);
 
             // Create levels
@@ -395,6 +427,96 @@ export default function CreateQuickTestPage() {
                             </label>
                         </div>
                     </div>
+
+                    <div className="space-y-4 pt-4 border-t border-slate-800">
+                        <div className="flex gap-4 p-1 bg-slate-800 rounded-lg w-fit">
+                            <button
+                                type="button"
+                                onClick={() => setDateMode('single')}
+                                className={`px-4 py-1.5 rounded-md text-sm transition-all ${dateMode === 'single' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Bir kunlik
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDateMode('range')}
+                                className={`px-4 py-1.5 rounded-md text-sm transition-all ${dateMode === 'range' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Kunlar oralig'i
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {dateMode === 'single' ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Sana
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={activeDate}
+                                        onChange={(e) => setActiveDate(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Boshlanish sanasi
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={activeStartDate}
+                                            onChange={(e) => setActiveStartDate(e.target.value)}
+                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Tugash sanasi
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={activeEndDate}
+                                            onChange={(e) => setActiveEndDate(e.target.value)}
+                                            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Boshlanish vaqti
+                                </label>
+                                <input
+                                    type="time"
+                                    value={activeTimeFrom}
+                                    onChange={(e) => setActiveTimeFrom(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Tugash vaqti
+                                </label>
+                                <input
+                                    type="time"
+                                    value={activeTimeTo}
+                                    onChange={(e) => setActiveTimeTo(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {(activeStartDate || activeEndDate || activeDate || activeTimeFrom || activeTimeTo) && (
+                        <p className="text-xs text-slate-500">
+                            💡 Test faqat belgilangan {dateMode === 'single' ? 'kunda' : 'kunlar oralig\'ida'} va vaqtda faol bo'ladi.
+                        </p>
+                    )}
                 </div>
             </div>
 

@@ -87,6 +87,37 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                 return;
             }
 
+            // Date and Time range checks
+            const now = new Date();
+            const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // 1. Check Specific Date
+            if (testData.activeDate && testData.activeDate !== currentDate) {
+                alert(`Ushbu imtihon faqat ${testData.activeDate} kuni faol bo'ladi.`);
+                return;
+            }
+
+            // 2. Check Date Range
+            if (testData.activeStartDate && currentDate < testData.activeStartDate) {
+                alert(`Ushbu imtihon hali boshlanmadi. Boshlanish sanasi: ${testData.activeStartDate}`);
+                return;
+            }
+            if (testData.activeEndDate && currentDate > testData.activeEndDate) {
+                alert(`Ushbu imtihon yakunlangan. Yakunlanish sanasi: ${testData.activeEndDate}`);
+                return;
+            }
+
+            // 3. Check Time Range (only if date is valid)
+            if (testData.activeTimeFrom && currentTime < testData.activeTimeFrom) {
+                alert(`Ushbu imtihon soat ${testData.activeTimeFrom} da boshlanadi.`);
+                return;
+            }
+            if (testData.activeTimeTo && currentTime > testData.activeTimeTo) {
+                alert(`Ushbu imtihon soat ${testData.activeTimeTo} da yakunlangan.`);
+                return;
+            }
+
             setTest(testData);
         } catch (error) {
             console.error('Error loading test:', error);

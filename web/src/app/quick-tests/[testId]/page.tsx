@@ -121,36 +121,41 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
             // Check availability (Date and Time)
             const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-            // Check specific date if set
-            if (testData.activeDate) {
-                // Get local date string in YYYY-MM-DD format
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const today = `${year}-${month}-${day}`;
-
-                if (testData.activeDate !== today) {
-                    alert(`Bu imtihon faqat ${testData.activeDate} sanasida bo'lib o'tadi`);
-                    router.push('/quick-tests');
-                    return;
-                }
+            // 1. Check specific date if set
+            if (testData.activeDate && testData.activeDate !== today) {
+                alert(`Bu imtihon faqat ${testData.activeDate} sanasida bo'lib o'tadi`);
+                router.push('/quick-tests');
+                return;
             }
 
-            // Check time range
-            if (testData.activeTimeFrom && testData.activeTimeTo) {
-                const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            // 2. Check date range if set
+            if (testData.activeStartDate && today < testData.activeStartDate) {
+                alert(`Bu imtihon hali boshlanmagan. Boshlanish sanasi: ${testData.activeStartDate}`);
+                router.push('/quick-tests');
+                return;
+            }
+            if (testData.activeEndDate && today > testData.activeEndDate) {
+                alert(`Bu imtihon yakunlangan. Yakunlanish sanasi: ${testData.activeEndDate}`);
+                router.push('/quick-tests');
+                return;
+            }
 
-                if (currentTime < testData.activeTimeFrom) {
-                    alert(`Bu imtihon soat ${testData.activeTimeFrom} dan boshlanadi`);
-                    router.push('/quick-tests');
-                    return;
-                }
-                if (currentTime > testData.activeTimeTo) {
-                    alert(`Bu imtihon soat ${testData.activeTimeTo} da tugaydi`);
-                    router.push('/quick-tests');
-                    return;
-                }
+            // 3. Check time range if set
+            if (testData.activeTimeFrom && currentTime < testData.activeTimeFrom) {
+                alert(`Bu imtihon soat ${testData.activeTimeFrom} da boshlanadi`);
+                router.push('/quick-tests');
+                return;
+            }
+            if (testData.activeTimeTo && currentTime > testData.activeTimeTo) {
+                alert(`Bu imtihon soat ${testData.activeTimeTo} da tugaydi`);
+                router.push('/quick-tests');
+                return;
             }
 
             setTest(testData);
@@ -689,27 +694,27 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             </div>
 
             {/* Main Content Area */}
-            <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
                 {/* Question Content */}
-                <div className="flex-1">
-                    <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-2xl overflow-hidden">
+                <div className="flex-1 w-full">
+                    <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl">
                         {/* Level Badge */}
-                        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-slate-800 px-6 py-3">
+                        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3">
                             <div className="flex items-center gap-2 text-cyan-400">
-                                <Layers size={18} />
-                                <span className="font-medium">{currentLevel.title}</span>
+                                <Layers size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                <span className="font-medium text-xs sm:text-base">{currentLevel.title}</span>
                             </div>
                         </div>
 
                         {/* Question Section */}
-                        <div className="p-6 md:p-8">
+                        <div className="p-4 sm:p-6 md:p-8">
                             {/* Question Text */}
-                            <div className="mb-6">
-                                <div className="flex items-start gap-3 mb-4">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                                        <span className="text-cyan-400 font-bold">{currentQuestionIndex + 1}</span>
+                            <div className="mb-4 sm:mb-6">
+                                <div className="flex items-start gap-2 sm:gap-3 mb-4">
+                                    <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center mt-1">
+                                        <span className="text-cyan-400 font-bold text-sm sm:text-base">{currentQuestionIndex + 1}</span>
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-semibold text-white leading-relaxed flex-1">
+                                    <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-relaxed flex-1">
                                         {currentQuestion.questionText}
                                     </h2>
                                 </div>
@@ -718,30 +723,22 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             {/* Question Image */}
                             {currentQuestion.imageUrl && (
                                 <div className="mb-6">
-                                    <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-4">
+                                    <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-2 sm:p-4">
                                         <img
                                             src={currentQuestion.imageUrl}
                                             alt="Savol rasmi"
-                                            className="w-full h-auto max-h-[400px] object-contain mx-auto"
+                                            className="w-full h-auto max-h-[250px] sm:max-h-[400px] object-contain mx-auto"
                                             onLoad={() => {
                                                 console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
                                             }}
                                             onError={(e) => {
                                                 console.error('❌ RASM YUKLANMADI:', currentQuestion.imageUrl);
-                                                console.error('Xatolik: Rasm topilmadi yoki ochiq emas');
                                                 const parent = e.currentTarget.parentElement;
                                                 if (parent) {
                                                     parent.innerHTML = `
-                                                    <div class="text-center py-8 bg-red-500/10 rounded-lg border-2 border-red-500/30">
-                                                        <div class="text-red-400 mb-3 text-lg font-bold">⚠️ Rasm Yuklanmadi</div>
-                                                        <div class="text-xs text-slate-400 mb-2">URL:</div>
-                                                        <div class="text-xs text-slate-300 break-all px-4 mb-3 font-mono bg-slate-900 py-2 rounded">${currentQuestion.imageUrl}</div>
-                                                        <div class="text-sm text-yellow-400 mb-2">📋 Tekshirish:</div>
-                                                        <div class="text-xs text-slate-400 space-y-1">
-                                                            <div>1. Google Drive'da rasm "Anyone with the link" ga ochiq ekanligini tekshiring</div>
-                                                            <div>2. Linkni yangi tab'da ochib ko'ring</div>
-                                                            <div>3. F12 bosib Console'da batafsil xatolikni ko'ring</div>
-                                                        </div>
+                                                    <div class="text-center py-6 sm:py-8 bg-red-500/10 rounded-lg border-2 border-red-500/30">
+                                                        <div class="text-red-400 mb-2 text-base font-bold">⚠️ Rasm Yuklanmadi</div>
+                                                        <div class="text-[10px] text-slate-500 break-all px-4 font-mono">${currentQuestion.imageUrl}</div>
                                                     </div>
                                                 `;
                                                 }
@@ -752,9 +749,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             )}
 
                             {/* Answer Options */}
-                            <div className="space-y-3">
-                                <p className="text-sm text-slate-400 mb-3 flex items-center gap-2">
-                                    <Zap size={16} className="text-cyan-400" />
+                            <div className="space-y-2.5 sm:space-y-3">
+                                <p className="text-[10px] sm:text-sm text-slate-400 mb-2 sm:mb-3 flex items-center gap-2 uppercase tracking-widest font-bold">
+                                    <Zap size={14} className="text-cyan-400" />
                                     Javobni tanlang:
                                 </p>
                                 {currentQuestion.options.map((option, idx) => {
@@ -763,24 +760,24 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                         <button
                                             key={option.optionId}
                                             onClick={() => handleAnswer(option.optionId)}
-                                            className={`group w-full text-left p-4 border-2 rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSelected
-                                                ? 'bg-cyan-500/20 border-cyan-500 ring-2 ring-cyan-400'
-                                                : 'bg-slate-800/50 border-slate-700 hover:border-cyan-500 hover:bg-slate-800'
+                                            className={`group w-full text-left p-3.5 sm:p-4 border-2 rounded-xl transition-all duration-200 active:scale-[0.98] ${isSelected
+                                                ? 'bg-cyan-500/20 border-cyan-500 ring-2 ring-cyan-400/10'
+                                                : 'bg-slate-800/40 border-slate-700 hover:border-slate-500 hover:bg-slate-800'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-0.5 ${isSelected
                                                     ? 'border-cyan-400 bg-cyan-500'
                                                     : 'border-slate-600 group-hover:border-cyan-500'
                                                     }`}>
-                                                    <span className={`text-xs font-medium ${isSelected
+                                                    <span className={`text-[10px] font-bold ${isSelected
                                                         ? 'text-white'
                                                         : 'text-slate-500 group-hover:text-cyan-400'
                                                         }`}>
                                                         {String.fromCharCode(65 + idx)}
                                                     </span>
                                                 </div>
-                                                <span className={`text-base transition-colors leading-relaxed ${isSelected
+                                                <span className={`text-sm sm:text-base transition-colors leading-relaxed ${isSelected
                                                     ? 'text-white font-medium'
                                                     : 'text-slate-200 group-hover:text-white'
                                                     }`}>
@@ -793,18 +790,18 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-6 flex justify-center gap-4">
+                            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
                                 {selectedAnswer ? (
                                     <button
                                         onClick={handleNext}
-                                        className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all font-medium"
+                                        className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all font-bold text-lg"
                                     >
                                         Keyingi
                                     </button>
                                 ) : (
                                     <button
                                         onClick={handleSkip}
-                                        className="px-6 py-3 bg-slate-700/50 text-slate-300 rounded-xl hover:bg-slate-700 transition-all border border-slate-600 hover:border-slate-500"
+                                        className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 text-slate-300 rounded-xl hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-600 font-medium"
                                     >
                                         O&apos;tkazib yuborish
                                     </button>
@@ -815,16 +812,18 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                 </div>
 
                 {/* Question Navigation Panel */}
-                <QuestionNavigation
-                    levels={levels}
-                    answers={answers}
-                    currentLevelIndex={currentLevelIndex}
-                    currentQuestionIndex={currentQuestionIndex}
-                    onNavigate={(levelIdx, questionIdx) => {
-                        setCurrentLevelIndex(levelIdx);
-                        setCurrentQuestionIndex(questionIdx);
-                    }}
-                />
+                <div className="w-full lg:w-80 lg:shrink-0">
+                    <QuestionNavigation
+                        levels={levels}
+                        answers={answers}
+                        currentLevelIndex={currentLevelIndex}
+                        currentQuestionIndex={currentQuestionIndex}
+                        onNavigate={(levelIdx, questionIdx) => {
+                            setCurrentLevelIndex(levelIdx);
+                            setCurrentQuestionIndex(questionIdx);
+                        }}
+                    />
+                </div>
             </div>
 
             {/* Screenshot Protection */}

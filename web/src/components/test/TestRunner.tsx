@@ -255,14 +255,14 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
     }
 
     return (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto px-2 sm:px-4">
             {/* Progress Bar */}
-            <div className="mb-8">
-                <div className="flex justify-between text-sm text-slate-400 mb-2">
+            <div className="mb-6 sm:mb-8">
+                <div className="flex justify-between text-xs sm:text-sm text-slate-400 mb-2 px-1">
                     <span>Savol {currentQuestionIndex + 1} / {questions.length}</span>
                     <span>{Math.round(progress)}%</span>
                 </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 sm:h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-cyan-500 transition-all duration-500 ease-out"
                         style={{ width: `${progress}%` }}
@@ -271,18 +271,18 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
             </div>
 
             {/* Question Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl min-h-[400px] flex flex-col">
-                <h2 className="text-xl md:text-2xl font-semibold text-white mb-8 leading-relaxed">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl min-h-[350px] sm:min-h-[400px] flex flex-col">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white mb-6 sm:mb-8 leading-relaxed">
                     {currentQuestion.questionText}
                 </h2>
 
                 {/* Question Image */}
                 {currentQuestion.imageUrl && (
-                    <div className="mb-6 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <div className="mb-6 p-2 sm:p-3 bg-slate-950 rounded-xl border border-slate-800">
                         <img
                             src={currentQuestion.imageUrl}
                             alt="Savol rasmi"
-                            className="max-w-full h-auto rounded-lg mx-auto"
+                            className="max-w-full h-auto rounded-lg mx-auto max-h-[250px] sm:max-h-[400px] object-contain"
                             onLoad={(e) => {
                                 console.log('✅ Rasm yuklandi:', currentQuestion.imageUrl);
                             }}
@@ -291,12 +291,9 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                                 const parent = e.currentTarget.parentElement;
                                 if (parent) {
                                     parent.innerHTML = `
-                                        <div class="text-center py-8">
-                                            <div class="text-red-400 mb-2">⚠️ Rasm yuklanmadi</div>
-                                            <div class="text-xs text-slate-500 break-all px-4">${currentQuestion.imageUrl}</div>
-                                            <div class="text-xs text-slate-400 mt-2">
-                                                Google Drive rasmni "Anyone with the link" ga ochiq qiling
-                                            </div>
+                                        <div class="text-center py-4 sm:py-8">
+                                            <div class="text-red-400 mb-2 text-sm sm:text-base">⚠️ Rasm yuklanmadi</div>
+                                            <div class="text-[10px] text-slate-500 break-all px-2 font-mono">${currentQuestion.imageUrl}</div>
                                         </div>
                                     `;
                                 }
@@ -305,34 +302,34 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                     </div>
                 )}
 
-                <div className="space-y-4 flex-1">
+                <div className="space-y-3 sm:space-y-4 flex-1">
                     {currentQuestion.options.map((option) => {
                         const isSelected = selectedOptions[currentQuestion.id] === option.id;
                         return (
                             <button
                                 key={option.id}
                                 onClick={() => handleOptionSelect(option.id)}
-                                className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center gap-4 ${isSelected
+                                className={`w-full text-left p-3.5 sm:p-4 rounded-xl border-2 transition-all group flex items-start sm:items-center gap-3 sm:gap-4 ${isSelected
                                     ? 'border-cyan-500 bg-cyan-500/10 text-white'
                                     : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700 hover:bg-slate-800'
                                     }`}
                             >
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'border-cyan-500' : 'border-slate-600 group-hover:border-slate-500'
+                                <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0 transition-colors ${isSelected ? 'border-cyan-500' : 'border-slate-600 group-hover:border-slate-500'
                                     }`}>
-                                    {isSelected && <div className="w-3 h-3 bg-cyan-500 rounded-full" />}
+                                    {isSelected && <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-cyan-500 rounded-full" />}
                                 </div>
-                                <span className="font-medium">{option.text}</span>
+                                <span className="font-medium text-sm sm:text-base">{option.text}</span>
                             </button>
                         );
                     })}
                 </div>
 
-                <div className="mt-8 flex justify-end">
+                <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row justify-between gap-3">
                     {/* O'tkazib yuborish tugmasi */}
                     {!selectedOptions[currentQuestion.id] && !isSubmitting && (
                         <button
                             onClick={handleSkip}
-                            className="mr-auto px-6 py-4 text-slate-400 hover:text-white font-medium transition-colors"
+                            className="px-4 py-2 sm:px-6 sm:py-4 text-slate-400 hover:text-white font-medium transition-colors text-sm sm:text-base text-center sm:text-left"
                         >
                             O'tkazib yuborish
                         </button>
@@ -341,12 +338,12 @@ export default function TestRunner({ stageId, questions, passPercentage = 75 }: 
                     <button
                         onClick={handleNext}
                         disabled={!selectedOptions[currentQuestion.id] || isSubmitting}
-                        className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-cyan-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        className="flex items-center justify-center gap-2 px-6 py-3.5 sm:px-8 sm:py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg shadow-lg shadow-cyan-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none w-full sm:w-auto ml-auto"
                     >
                         {isSubmitting ? 'Yuklanmoqda...' : (
-                            questions.length - Object.keys(selectedOptions).length <= 1 ? 'Yakunlash' : 'Keyingi'
+                            questions.length - Object.keys(selectedOptions).length <= 1 ? 'Yakunlash' : 'Next'
                         )}
-                        {!isSubmitting && <ChevronRight size={24} />}
+                        {!isSubmitting && <ChevronRight size={20} className="sm:w-6 sm:h-6" />}
                     </button>
                 </div>
             </div>

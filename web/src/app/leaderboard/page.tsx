@@ -139,78 +139,78 @@ export default function LeaderboardPage() {
             <div className="min-h-screen bg-slate-950 text-white pt-20 p-6">
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
-                    <div className="text-center mb-12">
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                            <Trophy className="text-yellow-400" size={48} />
-                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    <div className="text-center mb-8 sm:mb-12">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+                            <Trophy className="text-yellow-400 w-10 h-10 sm:w-12 sm:h-12" />
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                                 Reyting Jadvali
                             </h1>
                         </div>
-                        <p className="text-slate-400 text-lg">
+                        <p className="text-slate-400 text-base sm:text-lg">
                             Eng ko'p yulduz to'plagan foydalanuvchilar
                         </p>
                     </div>
 
                     {/* Top 3 Podium */}
                     {rankings.length >= 3 && (
-                        <div className="grid grid-cols-3 gap-4 mb-12 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4 mb-12 max-w-4xl mx-auto items-end">
                             {/* 2nd Place */}
-                            <div className="flex flex-col items-center pt-12">
+                            <div className="flex flex-col items-center order-2 sm:order-1 sm:pt-12">
                                 <div className="relative">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-gray-600 to-gray-400 rounded-full flex items-center justify-center text-2xl font-bold border-4 border-gray-500">
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-gray-600 to-gray-400 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold border-4 border-gray-500">
                                         {rankings[1].name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="absolute -top-2 -right-2 bg-slate-900 rounded-full p-1">
-                                        <Medal className="text-gray-400" size={20} />
+                                    <div className="absolute -top-1 -right-1 bg-slate-900 rounded-full p-1">
+                                        <Medal className="text-gray-400" size={16} />
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-white mt-3 text-center">{rankings[1].name}</h3>
-                                <div className="flex items-center gap-1 text-yellow-400 mt-2">
-                                    <Star size={16} fill="currentColor" />
+                                <h3 className="font-semibold text-white mt-3 text-center text-sm sm:text-base">{rankings[1].name}</h3>
+                                <div className="flex items-center gap-1 text-yellow-400 mt-1">
+                                    <Star size={14} fill="currentColor" />
                                     <span className="font-bold">{rankings[1].totalStars}</span>
                                 </div>
-                                <div className="bg-gradient-to-br from-gray-600 to-gray-400 rounded-t-xl px-6 py-4 mt-4 w-full text-center">
-                                    <div className="text-3xl font-bold">2</div>
+                                <div className="bg-gradient-to-br from-gray-600 to-gray-400 rounded-t-xl px-4 py-2 sm:px-6 sm:py-4 mt-4 w-full text-center">
+                                    <div className="text-2xl sm:text-3xl font-bold">2</div>
                                 </div>
                             </div>
 
                             {/* 1st Place */}
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center order-1 sm:order-2">
                                 <div className="relative">
-                                    <div className="w-24 h-24 bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-full flex items-center justify-center text-3xl font-bold border-4 border-yellow-500 shadow-lg shadow-yellow-500/50">
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold border-4 border-yellow-500 shadow-lg shadow-yellow-500/50">
                                         {rankings[0].name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="absolute -top-3 -right-3 bg-slate-900 rounded-full p-1">
-                                        <Trophy className="text-yellow-400" size={24} />
+                                    <div className="absolute -top-2 -right-2 bg-slate-900 rounded-full p-1">
+                                        <Trophy className="text-yellow-400" size={20} />
                                     </div>
                                 </div>
-                                <h3 className="font-bold text-white mt-3 text-center text-lg">{rankings[0].name}</h3>
-                                <div className="flex items-center gap-1 text-yellow-400 mt-2">
-                                    <Star size={18} fill="currentColor" />
-                                    <span className="font-bold text-lg">{rankings[0].totalStars}</span>
+                                <h3 className="font-bold text-white mt-3 text-center text-base sm:text-lg">{rankings[0].name}</h3>
+                                <div className="flex items-center gap-1 text-yellow-400 mt-1">
+                                    <Star size={16} fill="currentColor" />
+                                    <span className="font-bold text-base sm:text-lg">{rankings[0].totalStars}</span>
                                 </div>
-                                <div className="bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-t-xl px-6 py-6 mt-4 w-full text-center shadow-lg shadow-yellow-500/30">
-                                    <div className="text-4xl font-bold">1</div>
+                                <div className="bg-gradient-to-br from-yellow-600 to-yellow-400 rounded-t-xl px-4 py-3 sm:px-6 sm:py-6 mt-4 w-full text-center shadow-lg shadow-yellow-500/30">
+                                    <div className="text-3xl sm:text-4xl font-bold">1</div>
                                 </div>
                             </div>
 
                             {/* 3rd Place */}
-                            <div className="flex flex-col items-center pt-16">
+                            <div className="flex flex-col items-center order-3 sm:order-3 sm:pt-16">
                                 <div className="relative">
-                                    <div className="w-18 h-18 bg-gradient-to-br from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-xl font-bold border-4 border-orange-500">
+                                    <div className="w-14 h-14 sm:w-18 sm:h-18 bg-gradient-to-br from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold border-4 border-orange-500">
                                         {rankings[2].name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="absolute -top-2 -right-2 bg-slate-900 rounded-full p-1">
-                                        <Medal className="text-orange-600" size={20} />
+                                    <div className="absolute -top-1 -right-1 bg-slate-900 rounded-full p-1">
+                                        <Medal className="text-orange-600" size={16} />
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-white mt-3 text-center">{rankings[2].name}</h3>
-                                <div className="flex items-center gap-1 text-yellow-400 mt-2">
-                                    <Star size={16} fill="currentColor" />
+                                <h3 className="font-semibold text-white mt-3 text-center text-sm sm:text-base">{rankings[2].name}</h3>
+                                <div className="flex items-center gap-1 text-yellow-400 mt-1">
+                                    <Star size={14} fill="currentColor" />
                                     <span className="font-bold">{rankings[2].totalStars}</span>
                                 </div>
-                                <div className="bg-gradient-to-br from-orange-600 to-orange-400 rounded-t-xl px-6 py-3 mt-4 w-full text-center">
-                                    <div className="text-2xl font-bold">3</div>
+                                <div className="bg-gradient-to-br from-orange-600 to-orange-400 rounded-t-xl px-4 py-2 sm:px-6 sm:py-3 mt-4 w-full text-center">
+                                    <div className="text-xl sm:text-2xl font-bold">3</div>
                                 </div>
                             </div>
                         </div>
@@ -236,11 +236,11 @@ export default function LeaderboardPage() {
                             <table className="w-full">
                                 <thead className="bg-slate-800/50">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Reyting</th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Foydalanuvchi</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-300">Yulduzlar</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-300">Tugatilgan</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-300">O'rtacha Ball</th>
+                                        <th className="px-4 sm:px-6 py-4 text-left text-xs sm:text-sm font-semibold text-slate-300">Reyting</th>
+                                        <th className="px-4 sm:px-6 py-4 text-left text-xs sm:text-sm font-semibold text-slate-300">Foydalanuvchi</th>
+                                        <th className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-semibold text-slate-300">Yulduzlar</th>
+                                        <th className="hidden sm:table-cell px-6 py-4 text-center text-xs sm:text-sm font-semibold text-slate-300">Tugatilgan</th>
+                                        <th className="hidden xs:table-cell px-6 py-4 text-center text-xs sm:text-sm font-semibold text-slate-300">Ball</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
@@ -251,45 +251,43 @@ export default function LeaderboardPage() {
                                         )
                                         .map((rankUser) => (
                                             <tr key={rankUser.userId} className={`hover:bg-slate-800/30 transition-colors ${rankUser.userId === user.userId ? 'bg-cyan-500/10' : ''}`}>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
+                                                <td className="px-4 sm:px-6 py-4">
+                                                    <div className="flex items-center gap-2 sm:gap-3">
                                                         {getRankBadge(rankUser.rank)}
-                                                        <span className={`text-lg font-bold ${rankUser.rank <= 3 ? 'text-white' : 'text-slate-400'}`}>
+                                                        <span className={`text-base sm:text-lg font-bold ${rankUser.rank <= 3 ? 'text-white' : 'text-slate-400'}`}>
                                                             #{rankUser.rank}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 bg-gradient-to-br ${getRankColor(rankUser.rank)} rounded-full flex items-center justify-center text-white font-semibold`}>
+                                                <td className="px-4 sm:px-6 py-4">
+                                                    <div className="flex items-center gap-2 sm:gap-3">
+                                                        <div className={`shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${getRankColor(rankUser.rank)} rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-base`}>
                                                             {rankUser.name.charAt(0).toUpperCase()}
                                                         </div>
-                                                        <div>
-                                                            <div className="font-medium text-white flex items-center gap-2">
-                                                                {rankUser.name}
+                                                        <div className="truncate max-w-[100px] sm:max-w-none">
+                                                            <div className="font-medium text-white flex items-center gap-2 text-sm sm:text-base">
+                                                                <span className="truncate">{rankUser.name}</span>
                                                                 {rankUser.userId === user.userId && (
-                                                                    <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full">Siz</span>
+                                                                    <span className="shrink-0 text-[10px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded-full">Siz</span>
                                                                 )}
                                                             </div>
-                                                            <div className="text-xs text-slate-500">{rankUser.email}</div>
+                                                            <div className="text-[10px] sm:text-xs text-slate-500 truncate hidden sm:block">{rankUser.email}</div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <Star className="text-yellow-400" size={18} fill="currentColor" />
-                                                        <span className="text-xl font-bold text-yellow-400">{rankUser.totalStars}</span>
+                                                <td className="px-4 sm:px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-yellow-400">
+                                                        <Star size={16} fill="currentColor" className="shrink-0" />
+                                                        <span className="text-lg sm:text-xl font-bold">{rankUser.totalStars}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="text-center">
-                                                        <span className="text-white font-semibold">{rankUser.completedStages}</span>
-                                                        <span className="text-slate-500"> / {rankUser.totalStages}</span>
-                                                    </div>
+                                                <td className="hidden sm:table-cell px-6 py-4 text-center">
+                                                    <span className="text-white font-semibold">{rankUser.completedStages}</span>
+                                                    <span className="text-slate-500"> / {rankUser.totalStages}</span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <div className={`px-3 py-1 rounded-full font-semibold ${rankUser.averageScore >= 90 ? 'bg-green-500/20 text-green-400' :
+                                                <td className="hidden xs:table-cell px-6 py-4">
+                                                    <div className="flex items-center justify-center">
+                                                        <div className={`px-2 sm:px-3 py-1 rounded-full font-semibold text-xs ${rankUser.averageScore >= 90 ? 'bg-green-500/20 text-green-400' :
                                                             rankUser.averageScore >= 75 ? 'bg-blue-500/20 text-blue-400' :
                                                                 rankUser.averageScore >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
                                                                     'bg-red-500/20 text-red-400'

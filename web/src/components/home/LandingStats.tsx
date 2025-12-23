@@ -93,11 +93,11 @@ export default function LandingStats() {
 
     if (stats.loading) {
         return (
-            <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 border-t border-slate-800/50 pt-10 w-full animate-pulse">
+            <div className="mt-12 sm:mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-16 border-t border-slate-800/50 pt-8 sm:pt-10 w-full animate-pulse px-4 sm:px-0">
                 {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="flex flex-col items-center">
-                        <div className="h-8 w-24 bg-slate-800 rounded mb-2"></div>
-                        <div className="h-4 w-16 bg-slate-800 rounded"></div>
+                        <div className="h-6 sm:h-8 w-16 sm:w-24 bg-slate-800 rounded mb-2"></div>
+                        <div className="h-3 sm:h-4 w-12 sm:w-16 bg-slate-800 rounded"></div>
                     </div>
                 ))}
             </div>
@@ -105,30 +105,30 @@ export default function LandingStats() {
     }
 
     return (
-        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 border-t border-slate-800/50 pt-10 w-full">
+        <div className="mt-12 sm:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-8 md:gap-16 border-t border-slate-800/50 pt-8 sm:pt-10 w-full px-2 sm:px-0">
             <div className="flex flex-col items-center group">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
-                    <PlayCircle className="text-cyan-400" size={28} /> {stats.videos}+
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-1.5 sm:gap-2 transition-transform group-hover:scale-110">
+                    <PlayCircle className="text-cyan-400 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" /> {stats.videos}+
                 </div>
-                <div className="text-sm text-slate-500">Video Darslar</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-slate-500 uppercase tracking-wider font-medium">Video Darslar</div>
             </div>
             <div className="flex flex-col items-center group">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
-                    <CheckCircle className="text-green-400" size={28} /> {stats.questions}+
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-1.5 sm:gap-2 transition-transform group-hover:scale-110">
+                    <CheckCircle className="text-green-400 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" /> {stats.questions}+
                 </div>
-                <div className="text-sm text-slate-500">Test Savollari</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-slate-500 uppercase tracking-wider font-medium">Test Savollari</div>
             </div>
             <div className="flex flex-col items-center group">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
-                    <Users className="text-purple-400" size={28} /> {stats.users}+
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-1.5 sm:gap-2 transition-transform group-hover:scale-110">
+                    <Users className="text-purple-400 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" /> {stats.users}+
                 </div>
-                <div className="text-sm text-slate-500">O'quvchilar</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-slate-500 uppercase tracking-wider font-medium">O'quvchilar</div>
             </div>
             <div className="flex flex-col items-center group">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-2 transition-transform group-hover:scale-110">
-                    <Award className="text-yellow-400" size={28} /> {stats.certificates}+
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 flex items-center gap-1.5 sm:gap-2 transition-transform group-hover:scale-110">
+                    <Award className="text-yellow-400 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" /> {stats.certificates}+
                 </div>
-                <div className="text-sm text-slate-500">Sertifikatlar</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-slate-500 uppercase tracking-wider font-medium">Sertifikatlar</div>
             </div>
         </div>
     );

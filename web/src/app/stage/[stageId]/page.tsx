@@ -174,10 +174,10 @@ export default function StagePage() {
             <Navbar userId={user.userId} userName={user.name} onLogout={handleLogout} />
             <ActivityTracker />
 
-            <div className="min-h-screen bg-slate-950 text-slate-100 pt-20 py-12 px-4">
-                <div className="max-w-4xl mx-auto mb-12 text-center">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">{stage.title}</h1>
-                    <p className="text-slate-400 text-lg mb-6">{stage.description}</p>
+            <div className="min-h-screen bg-slate-950 text-slate-100 pt-20 py-6 sm:py-12 px-3 sm:px-4">
+                <div className="max-w-4xl mx-auto mb-8 sm:mb-12 text-center">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">{stage.title}</h1>
+                    <p className="text-slate-400 text-sm sm:text-lg mb-4 sm:mb-6">{stage.description}</p>
 
                     {stage.videoUrl && (
                         <button

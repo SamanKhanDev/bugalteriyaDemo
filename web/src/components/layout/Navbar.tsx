@@ -112,13 +112,13 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLo
 
     return (
         <>
-            <nav className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-lg">
+            <nav className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 text-white px-3 sm:px-6 py-3 flex justify-between items-center shadow-lg">
                 {/* Logo */}
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-lg">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0">
                         B
                     </div>
-                    <span className="font-semibold text-lg tracking-tight">Buxgaltersiz</span>
+                    <span className="font-semibold text-base sm:text-lg tracking-tight truncate max-w-[80px] sm:max-w-none">Buxgaltersiz</span>
                 </div>
                 {/* Links */}
                 <div className="hidden md:flex items-center gap-6 text-sm text-slate-400">
@@ -130,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLo
                     </a>
                 </div>
                 {/* Right side */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 sm:gap-4">
                     {/* Notification bell */}
                     <div className="relative">
                         <button
@@ -191,15 +191,15 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLo
                     {uniqueId && (
                         <button
                             onClick={handleCopyId}
-                            className="group flex items-center gap-2 px-3 py-1.5 rounded-full border bg-purple-500/10 border-purple-500/50 hover:bg-purple-500/20 transition-all cursor-pointer"
+                            className="group flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border bg-purple-500/10 border-purple-500/50 hover:bg-purple-500/20 transition-all cursor-pointer flex-shrink-0"
                             title="Click to copy ID"
                         >
-                            <span className="text-xs text-purple-300 font-medium">ID:</span>
-                            <span className="font-mono font-bold text-purple-200">{uniqueId}</span>
+                            <span className="text-[10px] sm:text-xs text-purple-300 font-medium hidden xs:inline">ID:</span>
+                            <span className="font-mono text-xs sm:text-sm font-bold text-purple-200">{uniqueId}</span>
                             {copiedId ? (
-                                <Check size={14} className="text-green-400" />
+                                <Check size={12} className="text-green-400 sm:w-3.5 sm:h-3.5" />
                             ) : (
-                                <Copy size={14} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Copy size={12} className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity sm:w-3.5 sm:h-3.5" />
                             )}
                         </button>
                     )}
@@ -207,19 +207,16 @@ export const Navbar: React.FC<NavbarProps> = ({ userId, userName, uniqueId, onLo
                     <GlobalTimer userId={userId} variant="navbar" />
 
                     {/* User Profile */}
-                    <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
-                        <div className="text-right hidden sm:block">
-                            <div className="text-sm font-medium text-white">{userName}</div>
-                            <div className="text-xs text-slate-400">Foydalanuvchi</div>
-                        </div>
-                        <div className="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 font-medium border border-slate-700">
+                    <div className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-4 border-l border-slate-800">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 font-medium border border-slate-700 flex-shrink-0">
                             {userName.charAt(0).toUpperCase()}
                         </div>
                         <button
                             onClick={onLogout}
-                            className="text-xs text-red-400 hover:text-red-300 transition-colors ml-2"
+                            className="text-[10px] sm:text-xs text-red-400 hover:text-red-300 transition-colors ml-1"
                         >
-                            Chiqish
+                            <span className="hidden sm:inline">Chiqish</span>
+                            <span className="sm:hidden">Log out</span>
                         </button>
                     </div>
                 </div>

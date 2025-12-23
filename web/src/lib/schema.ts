@@ -113,6 +113,8 @@ export interface QuickTest {
     timeLimit?: number; // seconds per level (optional)
     certificateThreshold?: number; // percentage required for certificate
     activeDate?: string; // date in YYYY-MM-DD format (e.g., "2025-11-29")
+    activeStartDate?: string; // start date in YYYY-MM-DD format
+    activeEndDate?: string; // end date in YYYY-MM-DD format
     activeTimeFrom?: string; // start time in HH:mm format (e.g., "11:00")
     activeTimeTo?: string; // end time in HH:mm format (e.g., "15:00")
 }

@@ -107,8 +107,8 @@ export default function RegisterPage() {
 
             <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-                    <p className="text-slate-400">Start your professional accounting training</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Ro'yxatdan o'tish</h1>
+                    <p className="text-slate-400">Professional buxgalteriya kursini boshlang</p>
                 </div>
 
                 {error && (
@@ -119,7 +119,7 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">To'liq ismingiz</label>
                         <input
                             type="text"
                             name="name"
@@ -127,12 +127,12 @@ export default function RegisterPage() {
                             value={formData.name}
                             onChange={handleChange}
                             className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all"
-                            placeholder="John Doe"
+                            placeholder="Masalan: Ali Valiyev"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Email manzili</label>
                         <input
                             type="email"
                             name="email"
@@ -140,12 +140,12 @@ export default function RegisterPage() {
                             value={formData.email}
                             onChange={handleChange}
                             className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all"
-                            placeholder="you@example.com"
+                            placeholder="example@mail.com"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Phone Number (Optional)</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Telefon raqami (ixtiyoriy)</label>
                         <input
                             type="tel"
                             name="phone"
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Parol</label>
                         <input
                             type="password"
                             name="password"
@@ -181,18 +181,18 @@ export default function RegisterPage() {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Creating Account...
+                                Yuklanmoqda...
                             </span>
                         ) : (
-                            'Create Account'
+                            "Ro'yxatdan o'tish"
                         )}
                     </button>
                 </form>
 
                 <div className="mt-6 text-center text-sm text-slate-400">
-                    Already have an account?{' '}
-                    <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
-                        Sign in
+                    Akkauntingiz bormi?{' '}
+                    <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors">
+                        Kirish
                     </Link>
                 </div>
             </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { QuickTest } from '@/lib/schema';
-import { Plus, Trash2, Edit, Eye, BarChart3, Clock, Layers, Share2, Copy, Check, Search } from 'lucide-react';
+import { Plus, Trash2, Edit, Eye, BarChart3, Clock, Layers, Share2, Copy, Check, Search, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -46,13 +46,21 @@ export default function QuickTestsPage() {
                     shouldDeactivate = true;
                 }
 
-                // Check if time has passed (only if date is today)
-                if (test.activeDate === currentDate && test.activeTimeTo && currentTime > test.activeTimeTo) {
+                // Check if end date has passed
+                if (test.activeEndDate && test.activeEndDate < currentDate) {
+                    shouldDeactivate = true;
+                }
+
+                // Check if time has passed (only if date is today or within range)
+                const isToday = test.activeDate === currentDate ||
+                    (test.activeStartDate && test.activeEndDate && currentDate >= test.activeStartDate && currentDate <= test.activeEndDate);
+
+                if (isToday && test.activeTimeTo && currentTime > test.activeTimeTo) {
                     shouldDeactivate = true;
                 }
 
                 // If no specific date but time has passed today
-                if (!test.activeDate && test.activeTimeTo && currentTime > test.activeTimeTo) {
+                if (!test.activeDate && !test.activeStartDate && test.activeTimeTo && currentTime > test.activeTimeTo) {
                     shouldDeactivate = true;
                 }
 
@@ -193,6 +201,22 @@ export default function QuickTestsPage() {
                                             <div className="flex items-center gap-2 text-slate-400">
                                                 <Clock size={16} className="text-blue-400" />
                                                 <span>{Math.floor(test.timeLimit / 60)} daqiqa</span>
+                                            </div>
+                                        )}
+                                        {(test.activeStartDate || test.activeEndDate) && (
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <Calendar size={16} className="text-orange-400" />
+                                                <span>
+                                                    {test.activeStartDate || '...'} dan {test.activeEndDate || '...'} gacha
+                                                </span>
+                                            </div>
+                                        )}
+                                        {(test.activeTimeFrom || test.activeTimeTo) && (
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <Clock size={16} className="text-purple-400" />
+                                                <span>
+                                                    {test.activeTimeFrom || '00:00'} - {test.activeTimeTo || '23:59'}
+                                                </span>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 text-slate-400">
