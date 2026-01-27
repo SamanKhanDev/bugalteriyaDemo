@@ -137,6 +137,14 @@ service cloud.firestore {
       }
     }
 
+    // Quick Test Topics (for grouping tests)
+    match /quickTestTopics/{topicId} {
+      // Publicly readable (for users to see test categories)
+      allow read: if true;
+      // Only admins can create/modify topics
+      allow write: if isAdmin();
+    }
+
     // Quick Test Results
     match /quickTestResults/{resultId} {
       // Allow anyone to read results (needed for public leaderboard)

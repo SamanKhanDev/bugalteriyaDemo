@@ -30,6 +30,14 @@ export default function QuickTestLeaderboardPage() {
 
     const loadLeaderboard = async () => {
         try {
+            // 1. Get Active Tests to filter out archived ones
+            const testsSnapshot = await getDocs(collection(db, 'quickTests'));
+            const activeTestIds = new Set(
+                testsSnapshot.docs
+                    .filter(doc => !doc.data().isArchived)
+                    .map(doc => doc.id)
+            );
+
             const resultsSnapshot = await getDocs(
                 query(collection(db, 'quickTestResults'), orderBy('completedAt', 'desc'))
             );
@@ -40,6 +48,9 @@ export default function QuickTestLeaderboardPage() {
             const userMap = new Map<string, LeaderboardEntry>();
 
             results.forEach(result => {
+                // Skip results from archived tests to avoid double counting
+                if (!activeTestIds.has(result.testId)) return;
+
                 const existing = userMap.get(result.userId);
                 if (existing) {
                     existing.totalScore += result.score;

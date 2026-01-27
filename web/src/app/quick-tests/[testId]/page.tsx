@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, collection, query, orderBy, getDocs, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, getDocs, addDoc, Timestamp, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { QuickTest, QuickTestLevel } from '@/lib/schema';
+import { QuickTest, QuickTestLevel, QuickTestQuestion } from '@/lib/schema';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { Clock, Trophy, Target, Zap, CheckCircle2, XCircle, Layers, Download, LogOut } from 'lucide-react';
@@ -36,6 +36,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }
         return () => setCurrentTest(null);
     }, [test, testId, setCurrentTest]);
+
     const [levels, setLevels] = useState<QuickTestLevel[]>([]);
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -51,8 +52,13 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     const [isStarting, setIsStarting] = useState(true);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
-    // Screenshot Protection - Maximum security with logging
-    const BlurOverlay = useScreenshotProtection({
+    // Ranking State
+    const [userRank, setUserRank] = useState<number | null>(null);
+    const [topPlayers, setTopPlayers] = useState<any[]>([]);
+    const [rankingLoading, setRankingLoading] = useState(false);
+
+    // Screenshot Protection
+    useScreenshotProtection({
         enabled: !showResults,
         userId: activeUser?.userId,
         userName: activeUser?.name,
@@ -60,12 +66,11 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         testTitle: test?.title
     });
 
-
     useEffect(() => {
         loadTest();
     }, [testId]);
 
-    // Initialize timer when countdown finishes (test actually starts)
+    // Timer Logic
     useEffect(() => {
         if (levels.length > 0 && !isStarting && testStartTime === 0) {
             const now = Date.now();
@@ -75,7 +80,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }
     }, [levels, isStarting, testStartTime]);
 
-    // Timer interval for UI
     useEffect(() => {
         const interval = setInterval(() => {
             if (levels.length > 0) {
@@ -85,7 +89,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         return () => clearInterval(interval);
     }, [levels, lastLevelEndTime]);
 
-    // Countdown logic
+    // Countdown
     useEffect(() => {
         if (!loading && levels.length > 0 && startCountdown > 0) {
             const timer = setTimeout(() => setStartCountdown(prev => prev - 1), 1000);
@@ -95,7 +99,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }
     }, [startCountdown, loading, levels.length]);
 
-    // Prevent window close
+    // Prevent Close
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (!showResults) {
@@ -107,85 +111,16 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [showResults]);
 
-
     const loadTest = async () => {
         try {
             const testDoc = await getDoc(doc(db, 'quickTests', testId));
-            if (!testDoc.exists()) {
+
+            if (testDoc.exists()) {
+                await initializeTest(testDoc.data() as QuickTest, testDoc.id);
+            } else {
                 alert('Imtihon topilmadi');
                 router.push('/quick-tests');
-                return;
             }
-
-            const testData = { ...testDoc.data(), testId: testDoc.id } as QuickTest;
-
-            // Check availability (Date and Time)
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const today = `${year}-${month}-${day}`;
-            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-            // 1. Check specific date if set
-            if (testData.activeDate && testData.activeDate !== today) {
-                alert(`Bu imtihon faqat ${testData.activeDate} sanasida bo'lib o'tadi`);
-                router.push('/quick-tests');
-                return;
-            }
-
-            // 2. Check date range if set
-            if (testData.activeStartDate && today < testData.activeStartDate) {
-                alert(`Bu imtihon hali boshlanmagan. Boshlanish sanasi: ${testData.activeStartDate}`);
-                router.push('/quick-tests');
-                return;
-            }
-            if (testData.activeEndDate && today > testData.activeEndDate) {
-                alert(`Bu imtihon yakunlangan. Yakunlanish sanasi: ${testData.activeEndDate}`);
-                router.push('/quick-tests');
-                return;
-            }
-
-            // 3. Check time range if set
-            if (testData.activeTimeFrom && currentTime < testData.activeTimeFrom) {
-                alert(`Bu imtihon soat ${testData.activeTimeFrom} da boshlanadi`);
-                router.push('/quick-tests');
-                return;
-            }
-            if (testData.activeTimeTo && currentTime > testData.activeTimeTo) {
-                alert(`Bu imtihon soat ${testData.activeTimeTo} da tugaydi`);
-                router.push('/quick-tests');
-                return;
-            }
-
-            setTest(testData);
-
-            const levelsSnapshot = await getDocs(
-                query(collection(db, 'quickTests', testId, 'levels'), orderBy('levelNumber'))
-            );
-            const levelsData = levelsSnapshot.docs.map(doc => ({
-                ...doc.data(),
-                levelId: doc.id
-            })) as QuickTestLevel[];
-
-            const shuffle = <T,>(array: T[]): T[] => {
-                const shuffled = [...array];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                return shuffled;
-            };
-
-            const randomizedLevels = levelsData.map(level => ({
-                ...level,
-                questions: shuffle(level.questions).map(question => ({
-                    ...question,
-                    options: shuffle(question.options)
-                }))
-            }));
-
-            setLevels(randomizedLevels);
         } catch (error) {
             console.error('Error loading test:', error);
             alert('Xatolik yuz berdi');
@@ -194,21 +129,104 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         }
     };
 
+    const initializeTest = async (testData: QuickTest, id: string) => {
+        const testObj = { ...testData, testId: id };
+
+        if (!checkAvailability(testObj)) return;
+
+        const levelsSnapshot = await getDocs(
+            query(collection(db, 'quickTests', id, 'levels'), orderBy('levelNumber'))
+        );
+        const levelsData = levelsSnapshot.docs.map(doc => ({
+            ...doc.data(),
+            levelId: doc.id
+        })) as QuickTestLevel[];
+
+        finalizeInitialization(testObj, levelsData);
+    };
+
+    const checkAvailability = (data: { activeDate?: string; activeStartDate?: string; activeEndDate?: string; activeTimeFrom?: string; activeTimeTo?: string; }) => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+        if (data.activeDate && data.activeDate !== today) {
+            alert(`Bu imtihon faqat ${data.activeDate} sanasida bo'lib o'tadi`);
+            router.push('/quick-tests');
+            return false;
+        }
+        if (data.activeStartDate && today < data.activeStartDate) {
+            alert(`Bu imtihon hali boshlanmagan. Boshlanish sanasi: ${data.activeStartDate}`);
+            router.push('/quick-tests');
+            return false;
+        }
+        if (data.activeEndDate && today > data.activeEndDate) {
+            alert(`Bu imtihon yakunlangan. Yakunlanish sanasi: ${data.activeEndDate}`);
+            router.push('/quick-tests');
+            return false;
+        }
+        if (data.activeTimeFrom && currentTime < data.activeTimeFrom) {
+            alert(`Bu imtihon soat ${data.activeTimeFrom} da boshlanadi`);
+            router.push('/quick-tests');
+            return false;
+        }
+        if (data.activeTimeTo && currentTime > data.activeTimeTo) {
+            alert(`Bu imtihon soat ${data.activeTimeTo} da tugaydi`);
+            router.push('/quick-tests');
+            return false;
+        }
+        return true;
+    };
+
+    const finalizeInitialization = (testData: QuickTest, levelsData: QuickTestLevel[]) => {
+        setTest(testData);
+
+        const shuffle = <T,>(array: T[]): T[] => {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+
+        // Flatten all questions from all levels into one list
+        let allQuestions: QuickTestQuestion[] = [];
+        levelsData.forEach(level => {
+            allQuestions = [...allQuestions, ...level.questions];
+        });
+
+        // Shuffle all questions and their options
+        const shuffledQuestions = shuffle(allQuestions).map((question: QuickTestQuestion) => ({
+            ...question,
+            options: shuffle(question.options)
+        }));
+
+        // Create a single unified level
+        const unifiedLevel: QuickTestLevel = {
+            levelId: 'unified',
+            testId: testData.testId,
+            levelNumber: 1,
+            title: 'Asosiy Imtihon',
+            questions: shuffledQuestions,
+            // If original levels had time limits, we might want to sum them up here, 
+            // but for now we assume the test might have a global time limit or none.
+            // We'll leave timeLimit undefined or take from testData if applicable.
+        };
+
+        setLevels([unifiedLevel]);
+    };
+
     const currentLevel = levels[currentLevelIndex];
     const currentQuestion = currentLevel?.questions[currentQuestionIndex];
     const totalQuestions = levels.reduce((sum, level) => sum + level.questions.length, 0);
     const answeredQuestions = answers.length;
     const progress = (answeredQuestions / totalQuestions) * 100;
 
-    // Debug: Log image URL when question changes
-    useEffect(() => {
-        if (currentQuestion?.imageUrl) {
-            console.log('🖼️ Savol rasmi URL:', currentQuestion.imageUrl);
-            console.log('📍 Savol:', currentQuestion.questionText?.substring(0, 50) + '...');
-        }
-    }, [currentQuestion]);
-
-    // Sync selectedAnswer with existing answers when question changes
+    // Sync selectedAnswer
     useEffect(() => {
         if (currentQuestion) {
             const existingAnswer = answers.find(a => a.questionId === currentQuestion.questionId);
@@ -222,17 +240,15 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     };
 
     const findNextUnansweredIndex = (startIndex: number, questions: any[], currentAnswers: Answer[]): number => {
-        // First check from next index to end
         for (let i = startIndex + 1; i < questions.length; i++) {
             const isAnswered = currentAnswers.some(a => a.questionId === questions[i].questionId);
             if (!isAnswered) return i;
         }
-        // Then check from start to current index (loop)
         for (let i = 0; i <= startIndex; i++) {
             const isAnswered = currentAnswers.some(a => a.questionId === questions[i].questionId);
             if (!isAnswered) return i;
         }
-        return -1; // All answered
+        return -1;
     };
 
     const handleNext = () => {
@@ -248,71 +264,141 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
         const updatedAnswers = [...answers.filter(a => a.questionId !== currentQuestion.questionId), newAnswer];
         setAnswers(updatedAnswers);
-        setSelectedAnswer(null); // Reset selection
+        setSelectedAnswer(null);
 
-        // Find next question
         const nextIndex = findNextUnansweredIndex(currentQuestionIndex, currentLevel.questions, updatedAnswers);
 
         if (nextIndex !== -1) {
             setCurrentQuestionIndex(nextIndex);
         } else {
-            // Level finished - all answered
+            // Level finished
             const now = Date.now();
             const duration = Math.floor((now - lastLevelEndTime) / 1000);
 
-            // Update durations map
             const newDurations = new Map(levelDurations);
             newDurations.set(currentLevel.levelId, duration);
             setLevelDurations(newDurations);
             setLastLevelEndTime(now);
 
             if (currentLevelIndex < levels.length - 1) {
-                // Move to next level
                 setCurrentLevelIndex(currentLevelIndex + 1);
                 setCurrentQuestionIndex(0);
             } else {
-                // Test finished
                 submitTest(newDurations, updatedAnswers);
             }
         }
     };
 
     const handleSkip = () => {
-        setSelectedAnswer(null); // Reset selection
-
-        // Find next question without marking current as answered
+        setSelectedAnswer(null);
         const nextIndex = findNextUnansweredIndex(currentQuestionIndex, currentLevel.questions, answers);
 
         if (nextIndex !== -1) {
             setCurrentQuestionIndex(nextIndex);
         } else {
-            // Only current question remains unanswered?
-            // If skip acts as "stay" when only 1 left, or maybe force answer?
-            // If user skips the ONLY remaining question, just stay on it?
-            // Or if they skipped everything, we should probably just loop.
-            // But findNextUnansweredIndex handles looping. 
-            // If it returns -1, it means EVERYTHING is answered (but here we are skipping, so current is NOT answered).
-            // So logic needs to be careful: current question IS unanswered.
-
-            // Re-find next OTHER than current?
-            // Actually findNextUnansweredIndex will return current index if it's the only one left.
-            // Let's verify loop logic:
-            // if startIndex=0, questions=[Q1], isAnswered=false.
-            // Loop 1 (1 to 1): Empty.
-            // Loop 2 (0 to 0): checks Q1. Not answered. Return 0.
-            // So if nextIndex === currentQuestionIndex, it means only this question is left.
-            // We can just alert user or do nothing.
-
             if (nextIndex === currentQuestionIndex) {
-                // Only this question left
                 alert("Siz bu bosqichdagi barcha boshqa savollarga javob berdingiz. Ushbu savolga javob bering.");
             }
         }
     };
 
+    // Real-time Leaderboard Listener
+    useEffect(() => {
+        if (!showResults) return;
+
+        setRankingLoading(true);
+        const q = query(
+            collection(db, 'quickTestResults'),
+            where('testId', '==', testId)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const results = snapshot.docs.map(d => {
+                const data = d.data();
+                return {
+                    userId: data.userId as string,
+                    userName: data.userName as string,
+                    score: data.score as number,
+                    timeSpentSeconds: data.timeSpentSeconds as number,
+                    totalQuestions: data.totalQuestions as number,
+                    startedAt: data.startedAt // Keep as Firestore Timestamp
+                };
+            });
+
+            // 1. Group by Attempt (User + Start Time)
+            const attempts = new Map<string, {
+                userId: string,
+                userName: string,
+                score: number,
+                time: number,
+                totalQuestions: number,
+                startTime: number
+            }>();
+
+            results.forEach(r => {
+                // Compatibility for cases where startedAt might be missing or different format
+                const startTime = r.startedAt?.toMillis?.() || 0;
+                const attemptId = `${r.userId}_${startTime}`;
+
+                const stats = attempts.get(attemptId) || {
+                    userId: r.userId,
+                    userName: r.userName,
+                    score: 0,
+                    time: 0,
+                    totalQuestions: 0,
+                    startTime: startTime
+                };
+
+                stats.score += r.score;
+                stats.time += r.timeSpentSeconds;
+                stats.totalQuestions += r.totalQuestions;
+                attempts.set(attemptId, stats);
+            });
+
+            // 2. Pick Best Attempt per User
+            const userBestStats = new Map<string, any>();
+            attempts.forEach(attempt => {
+                const existing = userBestStats.get(attempt.userId);
+                // Criteria: Higher score, or same score with less time
+                if (!existing ||
+                    attempt.score > existing.score ||
+                    (attempt.score === existing.score && attempt.time < existing.time)) {
+                    userBestStats.set(attempt.userId, attempt);
+                }
+            });
+
+            // 3. Final Leaderboard Sort
+            const leaderboard = Array.from(userBestStats.values()).sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.time - b.time;
+            });
+
+            // Set Top 5
+            setTopPlayers(leaderboard.slice(0, 5));
+
+            // Set Current User Rank
+            const currentUserId = activeUser?.userId || localStorage.getItem('lastSubmittedUserId');
+            if (currentUserId) {
+                const rank = leaderboard.findIndex(u => u.userId === currentUserId) + 1;
+                if (rank > 0) setUserRank(rank);
+            }
+
+            setRankingLoading(false);
+        }, (error) => {
+            console.error("Leaderboard listener error:", error);
+            setRankingLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [showResults, testId, activeUser?.userId]);
+
     const submitTest = async (finalDurations: Map<string, number>, finalAnswers: Answer[]) => {
         setSubmitting(true);
         try {
+            const userIdToUse = activeUser?.userId || `guest_${Date.now()}`;
+            // Store ID for rank matching in listener
+            if (!activeUser?.userId) localStorage.setItem('lastSubmittedUserId', userIdToUse);
+
             for (let i = 0; i < levels.length; i++) {
                 const level = levels[i];
                 const levelAnswers = finalAnswers.filter(a =>
@@ -323,7 +409,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
                 await addDoc(collection(db, 'quickTestResults'), {
                     testId,
-                    userId: activeUser?.userId || `guest_${Date.now()}`,
+                    userId: userIdToUse,
                     userName: activeUser?.name || 'Mehmon',
                     isGuest: activeUser?.isGuest || false,
                     levelId: level.levelId,
@@ -337,6 +423,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                 });
             }
 
+            // We rely on the useEffect listener to update rank now
             setShowResults(true);
         } catch (error) {
             console.error('Error submitting test:', error);
@@ -356,9 +443,8 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         if (confirm('Tizimdan chiqmoqchimisiz? Imtihon natijalari saqlanmasligi mumkin.')) {
             try {
                 await signOut(auth);
-                // Clear guest data if any
                 localStorage.removeItem('guestUser');
-                router.push(`/quick-tests/public/${testId}`);
+                router.push(`/quick-tests`);
             } catch (error) {
                 console.error('Error signing out:', error);
             }
@@ -374,16 +460,12 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             format: 'a4'
         });
 
-        // Dark Blue Background
+        // Simplified drawing - same as before
         doc.setFillColor(13, 42, 87);
         doc.rect(0, 0, 297, 210, 'F');
-
-        // Top decorative lines
         doc.setFillColor(255, 255, 255);
         doc.rect(70, 25, 85, 1.5, 'F');
         doc.rect(242, 25, 85, 1.5, 'F');
-
-        // Center circle
         doc.setFillColor(255, 255, 255);
         doc.circle(148.5, 25, 12, 'F');
         doc.setFillColor(13, 42, 87);
@@ -391,47 +473,35 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         doc.setFillColor(255, 255, 255);
         doc.circle(148.5, 25, 6, 'F');
 
-        // "SERTIFIKAT" title
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(56);
         doc.setTextColor(255, 255, 255);
         doc.text('SERTIFIKAT', 148.5, 65, { align: 'center' });
 
-        // "MUKOFOT" subtitle in golden
         doc.setFontSize(20);
         doc.setTextColor(255, 193, 7);
         doc.text('MUKOFOT', 148.5, 78, { align: 'center' });
 
-        // Description
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(14);
         doc.setTextColor(255, 255, 255);
         doc.text('Quyidagi shaxsga taqdim etiladi:', 148.5, 92, { align: 'center' });
 
-        // User Name in GOLDEN
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(36);
         doc.setTextColor(255, 193, 7);
         doc.text(user.name.toUpperCase(), 148.5, 108, { align: 'center' });
 
-        // Achievement
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         doc.setTextColor(255, 255, 255);
         doc.text(`${test.title} imtihonini muvaffaqiyatli`, 148.5, 122, { align: 'center' });
         doc.text('yakunlagani uchun.', 148.5, 130, { align: 'center' });
 
-        // Stats
         const score = answers.filter(a => a.isCorrect).length;
         const totalQuestions = levels.reduce((sum, level) => sum + level.questions.length, 0);
         const percentage = (score / totalQuestions) * 100;
 
-        let totalTimeSeconds = 0;
-        levelDurations.forEach((duration) => {
-            totalTimeSeconds += duration;
-        });
-
-        // Trophy icon
         doc.setFillColor(255, 193, 7);
         doc.circle(148.5, 155, 15, 'F');
         doc.setFillColor(255, 215, 77);
@@ -440,9 +510,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         doc.setTextColor(255, 255, 255);
         doc.text('★', 148.5, 160, { align: 'center' });
 
-        // Bottom info
         const endTime = new Date();
-
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
@@ -458,22 +526,17 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         doc.setFontSize(9);
         doc.text(endTime.toLocaleDateString('uz-UZ'), 217, 192);
 
-        // QR Code
         try {
             const qrCodeDataUrl = await QRCode.toDataURL('https://bugaltersiz.uz', {
                 width: 200,
                 margin: 1,
-                color: {
-                    dark: '#FFFFFF',
-                    light: '#0D2A57'
-                }
+                color: { dark: '#FFFFFF', light: '#0D2A57' }
             });
             doc.addImage(qrCodeDataUrl, 'PNG', 260, 175, 25, 25);
         } catch (error) {
             console.error('QR Code error:', error);
         }
 
-        // Website URL
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(255, 193, 7);
@@ -525,7 +588,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
         const passed = percentage >= 60;
         const hasCertificate = test?.certificateThreshold !== undefined && percentage >= test.certificateThreshold;
 
-        // Calculate total time
         let totalTimeSeconds = 0;
         levelDurations.forEach((duration) => {
             totalTimeSeconds += duration;
@@ -533,8 +595,26 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 pt-20">
-                <div className="max-w-2xl w-full">
+                <div className="max-w-4xl w-full">
                     <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
+
+                        {/* Confetti Particles */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            {[...Array(20)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="absolute w-2 h-2 rounded-sm animate-bounce opacity-50"
+                                    style={{
+                                        top: `${Math.random() * 100}%`,
+                                        left: `${Math.random() * 100}%`,
+                                        backgroundColor: ['#fbbf24', '#34d399', '#60a5fa', '#f87171', '#a78bfa'][i % 5],
+                                        animationDelay: `${Math.random() * 2}s`,
+                                        animationDuration: `${2 + Math.random() * 3}s`
+                                    }}
+                                />
+                            ))}
+                        </div>
+
                         {hasCertificate && (
                             <div className="absolute inset-0 pointer-events-none">
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-yellow-500/10 to-transparent" />
@@ -561,6 +641,102 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </p>
                         </div>
 
+                        {/* KAHOT-STYLE PODIUM LEADERBOARD */}
+                        {topPlayers.length > 0 && (
+                            <div className="mb-12 relative z-10 animate-in fade-in duration-1000">
+                                <h3 className="text-xl font-bold text-white mb-8 flex items-center justify-center gap-2">
+                                    <Trophy size={24} className="text-yellow-400" />
+                                    G'oliblar Shoxsupasi
+                                </h3>
+
+                                <div className="flex items-end justify-center gap-2 sm:gap-4 px-2 mb-8">
+                                    {/* 2ND PLACE */}
+                                    {topPlayers[1] && (
+                                        <div className="flex flex-col items-center animate-in slide-in-from-bottom-20 duration-700 delay-300 fill-mode-both w-1/3 max-w-[120px]">
+                                            <div className="mb-3 text-center">
+                                                <p className="text-xs sm:text-sm font-bold text-slate-300 truncate w-full px-1">
+                                                    {topPlayers[1].userName}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 font-bold">{(topPlayers[1].score / topPlayers[1].totalQuestions * 100).toFixed(0)}%</p>
+                                                <p className="text-[9px] text-slate-600 font-medium">{topPlayers[1].score}/{topPlayers[1].totalQuestions}</p>
+                                            </div>
+                                            <div className="w-full h-24 sm:h-32 bg-gradient-to-t from-slate-700 to-slate-500 rounded-t-2xl flex flex-col items-center justify-start pt-4 shadow-lg border-x border-t border-slate-400/20">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-400 flex items-center justify-center text-slate-900 font-bold text-lg sm:text-xl shadow-inner">2</div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 1ST PLACE - CENTER */}
+                                    {topPlayers[0] && (
+                                        <div className="flex flex-col items-center animate-in slide-in-from-bottom-32 duration-1000 fill-mode-both relative z-20 w-1/3 max-w-[140px]">
+                                            <div className="absolute -top-10 sm:-top-12 animate-bounce">
+                                                <Trophy size={32} className="text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] sm:w-[40px] sm:h-[40px]" />
+                                            </div>
+                                            <div className="mb-3 text-center">
+                                                <p className="text-sm sm:text-lg font-black text-white truncate w-full px-1">
+                                                    {topPlayers[0].userName}
+                                                </p>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="text-xs sm:text-sm font-bold text-yellow-400">{(topPlayers[0].score / topPlayers[0].totalQuestions * 100).toFixed(0)}%</p>
+                                                    <p className="text-[10px] text-yellow-600/70 font-bold">{topPlayers[0].score}/{topPlayers[0].totalQuestions}</p>
+                                                </div>
+                                            </div>
+                                            <div className="w-full h-36 sm:h-48 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-2xl flex flex-col items-center justify-start pt-4 shadow-[0_0_30px_rgba(250,204,21,0.2)] border-x border-t border-yellow-200/30">
+                                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-yellow-200 flex items-center justify-center text-yellow-900 font-black text-2xl sm:text-3xl shadow-lg ring-4 ring-yellow-400/50">1</div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 3RD PLACE */}
+                                    {topPlayers[2] && (
+                                        <div className="flex flex-col items-center animate-in slide-in-from-bottom-16 duration-700 delay-500 fill-mode-both w-1/3 max-w-[120px]">
+                                            <div className="mb-3 text-center">
+                                                <p className="text-xs sm:text-sm font-bold text-slate-400 truncate w-full px-1">
+                                                    {topPlayers[2].userName}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 font-bold">{(topPlayers[2].score / topPlayers[2].totalQuestions * 100).toFixed(0)}%</p>
+                                                <p className="text-[9px] text-slate-600 font-medium">{topPlayers[2].score}/{topPlayers[2].totalQuestions}</p>
+                                            </div>
+                                            <div className="w-full h-16 sm:h-24 bg-gradient-to-t from-orange-800 to-orange-600 rounded-t-2xl flex flex-col items-center justify-start pt-4 shadow-lg border-x border-t border-orange-400/20">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-400 flex items-center justify-center text-orange-900 font-bold text-lg sm:text-xl shadow-inner">3</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* RUNNERS UP (4-5) */}
+                                {topPlayers.length > 3 && (
+                                    <div className="max-w-md mx-auto bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden animate-in fade-in zoom-in-95 delay-1000 fill-mode-both">
+                                        <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-700/50 text-center">
+                                            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500 tracking-widest">Keyingi o'rinlar</span>
+                                        </div>
+                                        <div className="divide-y divide-slate-700/30">
+                                            {topPlayers.slice(3, 5).map((player, idx) => (
+                                                <div key={player.userId} className={`flex items-center justify-between px-6 py-3 ${(activeUser?.userId === player.userId || localStorage.getItem('lastSubmittedUserId') === player.userId)
+                                                    ? 'bg-cyan-500/10'
+                                                    : ''
+                                                    }`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-slate-500 font-bold">{idx + 4}</span>
+                                                        <span className={`text-sm font-medium ${(activeUser?.userId === player.userId || localStorage.getItem('lastSubmittedUserId') === player.userId)
+                                                            ? 'text-cyan-400'
+                                                            : 'text-slate-300'
+                                                            }`}>
+                                                            {player.userName}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="block text-sm font-bold text-white">{(player.score / player.totalQuestions * 100).toFixed(0)}%</span>
+                                                        <span className="text-[10px] text-slate-500 font-bold">{player.score}/{player.totalQuestions}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {hasCertificate && (
                             <div className="mb-8 relative z-10">
                                 <div className="p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl">
@@ -579,37 +755,47 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                            <div className="bg-slate-800/50 rounded-2xl p-4">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <CheckCircle2 className="text-green-400" size={20} />
-                                    <span className="text-2xl font-bold text-white">{score}</span>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8 relative z-10">
+                            {/* Rank Badge */}
+                            <div className="bg-slate-800/50 rounded-2xl p-4 border border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 to-transparent shadow-lg text-center">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <Trophy className="text-yellow-400" size={18} />
+                                    <span className="text-xl font-bold text-white">
+                                        {rankingLoading ? '...' : (userRank ? `#${userRank}` : '-')}
+                                    </span>
                                 </div>
-                                <p className="text-sm text-slate-400">To&apos;g&apos;ri</p>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">O'rningiz</p>
                             </div>
-                            <div className="bg-slate-800/50 rounded-2xl p-4">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <XCircle className="text-red-400" size={20} />
-                                    <span className="text-2xl font-bold text-white">{totalQuestions - score}</span>
+
+                            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <CheckCircle2 className="text-green-400" size={18} />
+                                    <span className="text-xl font-bold text-white">{score}</span>
                                 </div>
-                                <p className="text-sm text-slate-400">Noto&apos;g&apos;ri</p>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">To&apos;g&apos;ri</p>
                             </div>
-                            <div className="bg-slate-800/50 rounded-2xl p-4">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <Clock className="text-blue-400" size={20} />
-                                    <span className="text-2xl font-bold text-white">{formatTime(totalTimeSeconds)}</span>
+                            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <XCircle className="text-red-400" size={18} />
+                                    <span className="text-xl font-bold text-white">{totalQuestions - score}</span>
                                 </div>
-                                <p className="text-sm text-slate-400">Vaqt</p>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">Noto&apos;g&apos;ri</p>
                             </div>
-                            <div className="bg-slate-800/50 rounded-2xl p-4">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <Layers className="text-purple-400" size={20} />
-                                    <span className="text-2xl font-bold text-white">{levels.length}</span>
+                            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <Clock className="text-blue-400" size={18} />
+                                    <span className="text-xl font-bold text-white">{formatTime(totalTimeSeconds)}</span>
                                 </div>
-                                <p className="text-sm text-slate-400">Bosqich</p>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">Vaqt</p>
+                            </div>
+                            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 text-center col-span-2 md:col-span-1">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <Layers className="text-purple-400" size={18} />
+                                    <span className="text-xl font-bold text-white">{test?.totalLevels || levels.length}</span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">Bosqich</p>
                             </div>
                         </div>
-
 
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
                             <button
@@ -642,7 +828,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-            {/* Compact Navbar */}
+            {/* Standard Navbar for existing runner */}
             <div className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-50 shadow-lg">
                 <div className="max-w-6xl mx-auto px-4 py-2">
                     <div className="flex items-center justify-between">
@@ -653,7 +839,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            {/* Global Timer for registered users */}
                             {activeUser && !activeUser.isGuest && (
                                 <GlobalTimer
                                     userId={activeUser.userId}
@@ -661,13 +846,11 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                     className="scale-90 opacity-80 hover:opacity-100 transition-opacity"
                                 />
                             )}
-                            {/* Exam Timer */}
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
                                 <Clock className="text-cyan-400" size={16} />
                                 <span className="text-white font-mono text-sm">{formatTime(timeElapsed)}</span>
                             </div>
 
-                            {/* Logout Button */}
                             <button
                                 onClick={handleLogout}
                                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -693,12 +876,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                 </div>
             </div>
 
-            {/* Main Content Area */}
             <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
-                {/* Question Content */}
                 <div className="flex-1 w-full">
                     <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl">
-                        {/* Level Badge */}
                         <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3">
                             <div className="flex items-center gap-2 text-cyan-400">
                                 <Layers size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -706,9 +886,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                             </div>
                         </div>
 
-                        {/* Question Section */}
                         <div className="p-4 sm:p-6 md:p-8">
-                            {/* Question Text */}
                             <div className="mb-4 sm:mb-6">
                                 <div className="flex items-start gap-2 sm:gap-3 mb-4">
                                     <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center mt-1">
@@ -720,7 +898,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 </div>
                             </div>
 
-                            {/* Question Image */}
                             {currentQuestion.imageUrl && (
                                 <div className="mb-6">
                                     <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 p-2 sm:p-4">
@@ -728,19 +905,10 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                             src={currentQuestion.imageUrl}
                                             alt="Savol rasmi"
                                             className="w-full h-auto max-h-[250px] sm:max-h-[400px] object-contain mx-auto"
-                                            onLoad={() => {
-                                                console.log('✅ Rasm muvaffaqiyatli yuklandi:', currentQuestion.imageUrl);
-                                            }}
                                             onError={(e) => {
-                                                console.error('❌ RASM YUKLANMADI:', currentQuestion.imageUrl);
                                                 const parent = e.currentTarget.parentElement;
                                                 if (parent) {
-                                                    parent.innerHTML = `
-                                                    <div class="text-center py-6 sm:py-8 bg-red-500/10 rounded-lg border-2 border-red-500/30">
-                                                        <div class="text-red-400 mb-2 text-base font-bold">⚠️ Rasm Yuklanmadi</div>
-                                                        <div class="text-[10px] text-slate-500 break-all px-4 font-mono">${currentQuestion.imageUrl}</div>
-                                                    </div>
-                                                `;
+                                                    parent.innerHTML = `...`;
                                                 }
                                             }}
                                         />
@@ -748,7 +916,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 </div>
                             )}
 
-                            {/* Answer Options */}
                             <div className="space-y-2.5 sm:space-y-3">
                                 <p className="text-[10px] sm:text-sm text-slate-400 mb-2 sm:mb-3 flex items-center gap-2 uppercase tracking-widest font-bold">
                                     <Zap size={14} className="text-cyan-400" />
@@ -789,7 +956,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 })}
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
                                 {selectedAnswer ? (
                                     <button
@@ -801,9 +967,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                 ) : (
                                     <button
                                         onClick={handleSkip}
-                                        className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 text-slate-300 rounded-xl hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-600 font-medium"
+                                        className="w-full sm:w-auto px-10 py-4 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors font-medium border border-slate-700"
                                     >
-                                        O&apos;tkazib yuborish
+                                        O'tkazib yuborish
                                     </button>
                                 )}
                             </div>
@@ -811,8 +977,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                     </div>
                 </div>
 
-                {/* Question Navigation Panel */}
-                <div className="w-full lg:w-80 lg:shrink-0">
+                <div className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0">
                     <QuestionNavigation
                         levels={levels}
                         answers={answers}
@@ -825,9 +990,6 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                     />
                 </div>
             </div>
-
-            {/* Screenshot Protection */}
-            {BlurOverlay}
         </div>
     );
 }

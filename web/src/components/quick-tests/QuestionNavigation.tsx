@@ -37,10 +37,12 @@ export function QuestionNavigation({
 
                         return (
                             <div key={level.levelId} className="space-y-3">
-                                <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-cyan-400">
-                                    <div className="h-4 w-1 bg-cyan-500 rounded-full"></div>
-                                    {level.title}
-                                </div>
+                                {levels.length > 1 && (
+                                    <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-cyan-400">
+                                        <div className="h-4 w-1 bg-cyan-500 rounded-full"></div>
+                                        {level.title}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-5 gap-2">
                                     {level.questions.map((question: any, qIdx: number) => {

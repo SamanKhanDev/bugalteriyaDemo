@@ -101,6 +101,23 @@ export interface AdminAction {
 }
 
 // Quick Test Interfaces
+export interface QuickTestTopic {
+    topicId: string;
+    title: string;
+    description?: string;
+    createdBy: string; // admin userId
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    order?: number; // for sorting topics
+    isActive?: boolean;
+    timeLimit?: number; // seconds (optional, maybe for total topic time if applicable)
+    activeDate?: string; // date in YYYY-MM-DD format
+    activeStartDate?: string; // start date in YYYY-MM-DD format
+    activeEndDate?: string; // end date in YYYY-MM-DD format
+    activeTimeFrom?: string; // start time in HH:mm format
+    activeTimeTo?: string; // end time in HH:mm format
+}
+
 export interface QuickTest {
     testId: string;
     title: string;
@@ -117,6 +134,8 @@ export interface QuickTest {
     activeEndDate?: string; // end date in YYYY-MM-DD format
     activeTimeFrom?: string; // start time in HH:mm format (e.g., "11:00")
     activeTimeTo?: string; // end time in HH:mm format (e.g., "15:00")
+    topicId?: string; // optional topic/category ID
+    isArchived?: boolean;
 }
 
 export interface QuickTestLevel {
