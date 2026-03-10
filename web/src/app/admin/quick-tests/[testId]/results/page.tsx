@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, getDocs, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { QuickTest, QuickTestResult, QuickTestLevel } from '@/lib/schema';
-import { Trophy, Clock, Target, Filter, Search, Eye, X, CheckCircle2, XCircle } from 'lucide-react';
+import { Trophy, Clock, Target, Filter, Search, Eye, X, CheckCircle2, XCircle, Calendar } from 'lucide-react';
 import { use } from 'react';
 
 interface ResultWithUser extends QuickTestResult {
@@ -21,6 +21,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
     const [sortBy, setSortBy] = useState<'score' | 'time'>('score');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewingResult, setViewingResult] = useState<ResultWithUser | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>('all');
 
     useEffect(() => {
         loadData();
@@ -57,14 +58,42 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
         }
     };
 
-    const processResults = () => {
+    const getLocalFormattedDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const availableDates = Array.from(new Set(results.map(r => {
+        if (!r.completedAt) return null;
+        try {
+            return getLocalFormattedDate(r.completedAt.toDate());
+        } catch (e) {
+            return null;
+        }
+    }))).filter(Boolean).sort((a: any, b: any) => b.localeCompare(a)) as string[];
+
+    const filteredByDateResults = selectedDate === 'all'
+        ? results
+        : results.filter(r => {
+            if (!r.completedAt) return false;
+            try {
+                const dateStr = getLocalFormattedDate(r.completedAt.toDate());
+                return dateStr === selectedDate;
+            } catch (e) {
+                return false;
+            }
+        });
+
+    const processResults = (dataToProcess: ResultWithUser[]) => {
         const userMap = new Map<string, {
             bestResults: Map<string, ResultWithUser>,
             userName: string,
             userId: string
         }>();
 
-        results.forEach(result => {
+        dataToProcess.forEach(result => {
             if (!userMap.has(result.userId)) {
                 userMap.set(result.userId, {
                     bestResults: new Map(),
@@ -131,7 +160,7 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
         }
     };
 
-    const sortedResults = processResults()
+    const sortedResults = processResults(filteredByDateResults)
         .filter(result =>
             result.userName.toLowerCase().includes(searchQuery.toLowerCase())
         )
@@ -144,15 +173,15 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
             }
         });
 
-    const totalAttempts = results.filter(r => r.levelNumber === 1).length;
+    const totalAttempts = filteredByDateResults.filter(r => r.levelNumber === 1).length;
     const stats = {
-        totalParticipants: new Set(results.map(r => r.userId)).size,
+        totalParticipants: new Set(filteredByDateResults.map(r => r.userId)).size,
         totalAttempts: totalAttempts,
         averageScore: totalAttempts > 0
-            ? results.reduce((sum, r) => sum + r.score, 0) / totalAttempts
+            ? filteredByDateResults.reduce((sum, r) => sum + r.score, 0) / totalAttempts
             : 0,
         averageTime: totalAttempts > 0
-            ? results.reduce((sum, r) => sum + r.timeSpentSeconds, 0) / totalAttempts
+            ? filteredByDateResults.reduce((sum, r) => sum + r.timeSpentSeconds, 0) / totalAttempts
             : 0
     };
 
@@ -257,6 +286,68 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Calendar className="text-slate-400" size={18} />
+                        <label className="text-sm text-slate-400">Kun:</label>
+                        <select
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                        >
+                            <option value="all">Barcha kunlar</option>
+                            {availableDates.map(date => (
+                                <option key={date} value={date}>
+                                    {new Date(date).toLocaleDateString('uz-UZ', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 ml-auto">
+                        <button
+                            onClick={() => setSelectedDate('all')}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${selectedDate === 'all'
+                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-lg shadow-cyan-500/10'
+                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                                }`}
+                        >
+                            Barchasi
+                        </button>
+                        {availableDates.slice(0, 3).map(date => {
+                            const dateObj = new Date(date);
+                            const today = new Date();
+                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+                            const yesterdayDate = new Date();
+                            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                            const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
+
+                            const isToday = date === todayStr;
+                            const isYesterday = date === yesterdayStr;
+
+                            let label = dateObj.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' });
+                            if (isToday) label = 'Bugun';
+                            if (isYesterday) label = 'Kecha';
+
+                            return (
+                                <button
+                                    key={date}
+                                    onClick={() => setSelectedDate(date)}
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${selectedDate === date
+                                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-lg shadow-cyan-500/10'
+                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                                        }`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <div className="flex items-center gap-2">
