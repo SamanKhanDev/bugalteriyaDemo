@@ -259,50 +259,18 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
                     </div>
 
                     {/* Auth Options */}
-                    <div className="grid md:grid-cols-3 gap-6">
+                    <div className="max-w-md mx-auto">
                         {/* Guest Mode */}
                         <button
                             onClick={() => setAuthMode('guest')}
-                            className="group bg-slate-900/50 backdrop-blur border-2 border-slate-800 hover:border-cyan-500 rounded-2xl p-8 transition-all hover:scale-105"
+                            className="w-full group bg-slate-900/50 backdrop-blur border-2 border-slate-800 hover:border-cyan-500 rounded-2xl p-8 transition-all hover:scale-105"
                         >
                             <div className="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-cyan-500/20 transition-colors">
                                 <Zap className="text-cyan-400" size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Tez Kirish</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">Testni boshlash</h3>
                             <p className="text-slate-400 text-sm">
                                 Faqat ism-familya bilan kirish
-                            </p>
-                        </button>
-
-                        {/* Register Mode - Highlighted */}
-                        <button
-                            onClick={() => setAuthMode('register')}
-                            className="relative group bg-gradient-to-br from-slate-900/80 to-purple-900/20 backdrop-blur border-2 border-purple-500/50 hover:border-purple-500 rounded-2xl p-8 transition-all hover:scale-105 shadow-lg shadow-purple-500/10 hover:shadow-purple-500/30"
-                        >
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                TAVSIYA ETILADI
-                            </div>
-                            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors relative">
-                                <div className="absolute inset-0 bg-purple-500/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                                <UserPlus className="text-purple-400 relative z-10" size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Ro&apos;yxatdan O&apos;tish</h3>
-                            <p className="text-slate-400 text-sm">
-                                To&apos;liq ro&apos;yxatdan o&apos;tish va platformaga kirish
-                            </p>
-                        </button>
-
-                        {/* Login Mode */}
-                        <button
-                            onClick={() => setAuthMode('login')}
-                            className="group bg-slate-900/50 backdrop-blur border-2 border-slate-800 hover:border-green-500 rounded-2xl p-8 transition-all hover:scale-105"
-                        >
-                            <div className="w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/20 transition-colors">
-                                <LogIn className="text-green-400" size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Kirish</h3>
-                            <p className="text-slate-400 text-sm">
-                                Mavjud akkaunt bilan kirish
                             </p>
                         </button>
                     </div>
@@ -324,7 +292,7 @@ export default function PublicQuickTestPage({ params }: { params: Promise<{ test
 
                 <div className="bg-slate-900/50 backdrop-blur border border-slate-800 rounded-2xl p-8">
                     <h2 className="text-2xl font-bold text-white mb-6">
-                        {authMode === 'guest' && 'Tez Kirish'}
+                        {authMode === 'guest' && 'Testni boshlash'}
                         {authMode === 'register' && 'Ro\'yxatdan O\'tish'}
                         {authMode === 'login' && 'Kirish'}
                     </h2>
