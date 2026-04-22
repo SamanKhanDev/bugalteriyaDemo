@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { collection, query, getDocs, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { QuickTest, QuickTestResult, QuickTestLevel } from '@/lib/schema';
-import { Trophy, Clock, Target, Filter, Search, Eye, X, CheckCircle2, XCircle, Calendar } from 'lucide-react';
+import { Trophy, Clock, Target, Filter, Search, Eye, X, CheckCircle2, XCircle, Calendar, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { use } from 'react';
 
 interface ResultWithUser extends QuickTestResult {
@@ -198,6 +199,79 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
         return `#${index + 1}`;
     };
 
+    const exportToExcel = () => {
+        const dateLabel = selectedDate === 'all'
+            ? 'Barcha kunlar'
+            : new Date(selectedDate).toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+        const rows = sortedResults.map((result, index) => {
+            const percentage = result.totalQuestions > 0
+                ? ((result.score / result.totalQuestions) * 100).toFixed(1) + '%'
+                : '0%';
+            const levelLabel = result.levelNumber === 0
+                ? 'Barcha bosqichlar'
+                : levels.find(l => l.levelNumber === result.levelNumber)?.title || `${result.levelNumber}-bosqich`;
+
+            let startedAtStr = '';
+            let completedAtStr = '';
+            let dateOnlyStr = '';
+            try {
+                if (result.startedAt) {
+                    startedAtStr = result.startedAt.toDate().toLocaleString('uz-UZ', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                }
+                const completedDate = result.completedAt.toDate();
+                completedAtStr = completedDate.toLocaleString('uz-UZ', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                dateOnlyStr = completedDate.toLocaleDateString('uz-UZ', {
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                });
+            } catch (_) {}
+
+            return {
+                'O\'rin': index + 1,
+                'Foydalanuvchi': result.userName,
+                'Sana': dateOnlyStr,
+                'Bosqich': levelLabel,
+                'Ball': result.score,
+                'Jami savol': result.totalQuestions,
+                'To\'g\'ri (%)': percentage,
+                'Sarflangan vaqt': formatTime(result.timeSpentSeconds),
+                'Boshlangan (vaqt)': startedAtStr,
+                'Tugagan (vaqt)': completedAtStr,
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+
+        // Column widths
+        worksheet['!cols'] = [
+            { wch: 6 },  // O'rin
+            { wch: 28 }, // Foydalanuvchi
+            { wch: 12 }, // Sana
+            { wch: 22 }, // Bosqich
+            { wch: 8 },  // Ball
+            { wch: 12 }, // Jami savol
+            { wch: 14 }, // To'g'ri (%)
+            { wch: 16 }, // Sarflangan vaqt
+            { wch: 20 }, // Boshlangan
+            { wch: 20 }  // Tugagan
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Natijalar');
+
+        const testTitle = (test?.title || 'test').replace(/[^a-zA-Z0-9_\-\u0400-\u04FF]/g, '_');
+        const safeDateLabel = selectedDate === 'all' ? 'barchasi' : selectedDate;
+        const fileName = `${testTitle}_${safeDateLabel}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -361,6 +435,17 @@ export default function QuickTestResultsPage({ params }: { params: Promise<{ tes
                             <option value="time">Vaqt bo'yicha</option>
                         </select>
                     </div>
+
+                    {/* Excel Export Button */}
+                    <button
+                        onClick={exportToExcel}
+                        disabled={sortedResults.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/60 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold transition-all"
+                        title="Excel formatda yuklab olish"
+                    >
+                        <Download size={16} />
+                        Excel yuklab olish
+                    </button>
                 </div>
 
                 <div className="relative">
