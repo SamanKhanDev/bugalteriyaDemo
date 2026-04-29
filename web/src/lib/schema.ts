@@ -180,3 +180,48 @@ export interface QuickTestResult {
     startedAt?: Timestamp; // when the test was started
     completedAt: Timestamp;
 }
+
+// Case Study (Keyslar) Interfaces
+export interface CaseStudy {
+    caseId: string;
+    title: string;
+    description: string;
+    createdBy: string;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    isActive: boolean;
+    totalQuestions: number;
+    timeLimit?: number; // total time for the case in seconds
+    activeDate?: string;
+    activeStartDate?: string;
+    activeEndDate?: string;
+    activeTimeFrom?: string;
+    activeTimeTo?: string;
+    isArchived?: boolean;
+}
+
+export interface CaseStudyQuestion {
+    questionId: string;
+    questionText: string;
+    imageUrl?: string;
+    sampleAnswer?: string;
+    explanation?: string;
+}
+
+export interface CaseStudyResult {
+    resultId: string;
+    caseId: string;
+    userId: string;
+    userName: string;
+    isGuest?: boolean;
+    score?: number;
+    totalQuestions: number;
+    timeSpentSeconds: number;
+    answers: Array<{
+        questionId: string;
+        answerText: string;
+    }>;
+    startedAt?: Timestamp;
+    completedAt: Timestamp;
+    status: 'submitted' | 'graded';
+}

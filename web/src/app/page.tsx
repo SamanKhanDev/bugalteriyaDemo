@@ -16,7 +16,7 @@ export default function Home() {
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl text-white shadow-lg shadow-cyan-500/20">
             B
           </div>
-          <span className="font-bold text-lg sm:text-xl tracking-tight text-white">Bugalteriya.uz</span>
+          <span className="font-bold text-lg sm:text-xl tracking-tight text-white">Buxgaltersiz.uz</span>
         </div>
         <div className="flex gap-2 sm:gap-4 items-center">
           <Link href="/auth/login" className="hidden sm:block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">

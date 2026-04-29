@@ -205,6 +205,9 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             options: shuffle(question.options)
         }));
 
+        // Compute total time limit: test.timeLimit (seconds per level) * number of levels
+        const totalTimeLimit = testData.timeLimit ? testData.timeLimit * levelsData.length : undefined;
+
         // Create a single unified level
         const unifiedLevel: QuickTestLevel = {
             levelId: 'unified',
@@ -212,9 +215,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             levelNumber: 1,
             title: 'Asosiy Imtihon',
             questions: shuffledQuestions,
-            // If original levels had time limits, we might want to sum them up here, 
-            // but for now we assume the test might have a global time limit or none.
-            // We'll leave timeLimit undefined or take from testData if applicable.
+            timeLimit: totalTimeLimit,
         };
 
         setLevels([unifiedLevel]);
@@ -393,6 +394,7 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
     }, [showResults, testId, activeUser?.userId]);
 
     const submitTest = async (finalDurations: Map<string, number>, finalAnswers: Answer[]) => {
+        if (submitting) return;
         setSubmitting(true);
         try {
             const userIdToUse = activeUser?.userId || `guest_${Date.now()}`;
@@ -432,6 +434,57 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
             setSubmitting(false);
         }
     };
+
+    const handleTimeUp = () => {
+        if (!showResults && !submitting && levels.length > 0) {
+            console.log('⏰ Vaqt tugadi! Avtomatik topshirilmoqda...');
+            const now = Date.now();
+            const duration = Math.floor((now - lastLevelEndTime) / 1000);
+            const newDurations = new Map(levelDurations);
+            if (currentLevel) {
+                newDurations.set(currentLevel.levelId, duration);
+            }
+            submitTest(newDurations, answers);
+        }
+    };
+
+    // Auto-submit when test's own timeLimit expires — works for ALL users (guest & registered)
+    useEffect(() => {
+        if (!currentLevel?.timeLimit) return;
+        if (showResults || submitting || isStarting || levels.length === 0) return;
+        if (timeElapsed >= currentLevel.timeLimit) {
+            handleTimeUp();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeElapsed]);
+
+    // O'tkaziluvchi testning faol muddati tekshiruvi
+    useEffect(() => {
+        if (!test) return;
+        if (showResults || submitting || isStarting || levels.length === 0) return;
+        
+        // ActiveTimeTo tekshirish intervaldan ko'ra yaxshi qilinadi
+        const checkActiveTime = () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            // Faqat o'sha kuni limit ishlasin (yoki kun chegarasi bo'lmasa)
+            const isToday = !test.activeDate || test.activeDate === today;
+            
+            if (isToday && test.activeTimeTo && currentTime >= test.activeTimeTo) {
+               console.log('⏰ Test yakunlanish vaqti yetib keldi (activeTimeTo)!');
+               handleTimeUp();
+            }
+        };
+
+        const interval = setInterval(checkActiveTime, 10000); // 10 soniyada bir marta tekshiramiz
+        return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeElapsed, test, showResults, submitting, isStarting]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -844,12 +897,33 @@ export default function QuickTestRunnerPage({ params }: { params: Promise<{ test
                                     userId={activeUser.userId}
                                     variant="navbar"
                                     className="scale-90 opacity-80 hover:opacity-100 transition-opacity"
+                                    onTimeUp={handleTimeUp}
                                 />
                             )}
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                                <Clock className="text-cyan-400" size={16} />
-                                <span className="text-white font-mono text-sm">{formatTime(timeElapsed)}</span>
-                            </div>
+                            {currentLevel?.timeLimit ? (() => {
+                                const remaining = Math.max(0, currentLevel.timeLimit - timeElapsed);
+                                const isUrgent = remaining <= 60;
+                                const isCritical = remaining <= 30;
+                                return (
+                                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                                        isCritical
+                                            ? 'bg-red-500/20 border-red-500 animate-pulse'
+                                            : isUrgent
+                                            ? 'bg-orange-500/20 border-orange-500'
+                                            : 'bg-slate-800 border-slate-700'
+                                    }`}>
+                                        <Clock className={isCritical ? 'text-red-400' : isUrgent ? 'text-orange-400' : 'text-cyan-400'} size={16} />
+                                        <span className={`font-mono text-sm font-bold ${
+                                            isCritical ? 'text-red-400' : isUrgent ? 'text-orange-400' : 'text-white'
+                                        }`}>{formatTime(remaining)}</span>
+                                    </div>
+                                );
+                            })() : (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                                    <Clock className="text-cyan-400" size={16} />
+                                    <span className="text-white font-mono text-sm">{formatTime(timeElapsed)}</span>
+                                </div>
+                            )}
 
                             <button
                                 onClick={handleLogout}

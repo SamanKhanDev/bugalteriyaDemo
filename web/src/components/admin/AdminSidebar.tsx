@@ -11,6 +11,7 @@ const navItems = [
     { name: 'Foydalanuvchilar', href: '/admin/users', icon: Users },
     { name: 'Testlar', href: '/admin/tests', icon: FileText },
     { name: 'Tezkor Testlar', href: '/admin/quick-tests', icon: Zap },
+    { name: 'Keyslar', href: '/admin/keyslar', icon: FileText },
     { name: 'Sertifikatlar', href: '/admin/certificates', icon: Award },
     { name: 'Reyting', href: '/admin/leaderboard', icon: Trophy },
     { name: 'Analitika', href: '/admin/analytics', icon: BarChart3 },

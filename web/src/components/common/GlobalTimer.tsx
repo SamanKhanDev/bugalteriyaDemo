@@ -10,11 +10,12 @@ interface GlobalTimerProps {
     userId: string;
     variant?: 'navbar' | 'overlay';
     className?: string;
+    onTimeUp?: () => void;
 }
 
 const SYNC_INTERVAL_MS = 30000; // 30 seconds
 
-export const GlobalTimer: React.FC<GlobalTimerProps> = ({ userId, variant = 'navbar', className = '' }) => {
+export const GlobalTimer: React.FC<GlobalTimerProps> = ({ userId, variant = 'navbar', className = '', onTimeUp }) => {
     const [remainingTime, setRemainingTime] = useState<number | null>(null);
     const [isExpired, setIsExpired] = useState(false);
     const [showExpiredModal, setShowExpiredModal] = useState(false);
@@ -89,6 +90,7 @@ export const GlobalTimer: React.FC<GlobalTimerProps> = ({ userId, variant = 'nav
                         setShowExpiredModal(true);
                         localTimeRef.current = 0;
                         syncToFirestore(0);
+                        if (onTimeUp) onTimeUp();
                     }
                     return 0;
                 }

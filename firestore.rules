@@ -170,5 +170,32 @@ service cloud.firestore {
       // Only admins can read logs
       allow read: if isAdmin();
     }
+
+    // Case Studies (Keyslar)
+    match /caseStudies/{caseId} {
+      // Publicly readable
+      allow read: if true;
+      // Only admins can create/modify
+      allow write: if isAdmin();
+
+      // Questions subcollection
+      match /questions/{questionId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // Case Study Results
+    match /caseStudyResults/{resultId} {
+      // Allow read for admins (to see all) and users (to see their own)
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Allow creation for authenticated users or guests
+      allow create: if (isAuthenticated() && request.resource.data.userId == request.auth.uid) || 
+                       (request.resource.data.isGuest == true);
+
+      // Admins can update (for grading)
+      allow update: if isAdmin();
+    }
   }
 }
